@@ -1,6 +1,6 @@
-# 🐝 Bee Web — Timeclock Frontend
+# 🐝 Bee Web — Farm Manager & Staff Dashboard
 
-React + Vite frontend for the Timeclock and Farm Staff management system.
+React + Vite frontend for Farm Manager & Staff Dashboard
 
 ---
 
