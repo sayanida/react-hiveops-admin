@@ -1,16 +1,104 @@
-# React + Vite
+# 🐝 Bee Web — Timeclock Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite frontend for the Timeclock and Farm Staff management system.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Prerequisites
 
-## React Compiler
+- [Node.js v20+](https://nodejs.org) — check with `node -v`
+- [nvm](https://github.com/nvm-sh/nvm) (recommended for managing Node versions)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 1. Install the correct Node version
+```bash
+nvm install 20
+nvm use 20
+```
+
+### 2. Install dependencies
+```bash
+npm install
+```
+
+### 3. Start the development server
+```bash
+npm run dev
+```
+
+The app will be available at **http://localhost:5173**
+
+---
+
+## Pages
+
+| Route | Description |
+|---|---|
+| `/admin` | Timeclock Admin — staff, rostering, clocking, pay, reports |
+| `/staff` | Farm Staff Panel — IoT reader, events, roster, break log |
+
+---
+
+## Configuration
+
+Each page has an **API Base URL** field in the top-right corner. Enter your backend URL and click **Save** — it persists in `localStorage` between sessions.
+
+| Page | Example URL |
+|---|---|
+| Admin | `http://localhost:8080/api` |
+| Staff | `http://localhost:8080/api` |
+
+---
+
+## Project Structure
+
+```
+src/
+├── main.jsx              # App entry point + routing
+├── Admin.jsx             # Timeclock Admin page
+├── Admin.css
+├── Staff.jsx             # Farm Staff page
+├── Staff.css
+└── tabs/                 # Admin tab components
+    ├── shared.jsx
+    ├── StaffTab.jsx
+    ├── RosterTab.jsx
+    ├── StationsTab.jsx
+    ├── ClockingTab.jsx
+    ├── RegistrationsTab.jsx
+    ├── ReportsTab.jsx
+    ├── PayslipsTab.jsx
+    └── ExceptionsTab.jsx
+```
+
+---
+
+## Tech Stack
+
+- [React 18](https://react.dev)
+- [Vite 5](https://vitejs.dev)
+- [Axios](https://axios-http.com) — HTTP client
+- [TanStack Query](https://tanstack.com/query) — data fetching & caching
+- [React Router](https://reactrouter.com) — client-side routing
+
+---
+
+## Build for Production
+
+```bash
+npm run build
+```
+
+Output goes to `dist/`. To serve the built app from your Spring Boot JAR, set Vite's `outDir` in `vite.config.js`:
+
+```js
+export default {
+  build: {
+    outDir: '../src/main/resources/static',
+    emptyOutDir: true,
+  }
+}
+```
