@@ -1,0 +1,59 @@
+import { AppBar, Box, Toolbar, Typography } from "@mui/material";
+import ApiConfigBar from "../common/ApiConfigBar.jsx";
+
+export default function StaffTopbar({ apiBase, setApiBase, showToast }) {
+  return (
+    <AppBar
+      position="sticky"
+      color="transparent"
+      elevation={0}
+      sx={{
+        backdropFilter: "blur(10px)",
+        borderBottom: "1px solid",
+        borderColor: "divider",
+      }}
+    >
+      <Toolbar
+        sx={{
+          px: { xs: 2, md: 5 },
+          py: 2,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 2,
+          flexWrap: "wrap",
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Box
+            sx={{
+              width: 46,
+              height: 46,
+              borderRadius: 1.5,
+              display: "grid",
+              placeItems: "center",
+              fontWeight: 700,
+              color: "common.white",
+              bgcolor: "primary.main",
+            }}
+          >
+            FS
+          </Box>
+          <Box>
+            <Typography variant="h6">Farm Staff</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Field-ready time capture & roster access
+            </Typography>
+          </Box>
+        </Box>
+        <ApiConfigBar
+          storageKey="farm_staff_api_base"
+          apiBase={apiBase}
+          setApiBase={setApiBase}
+          showToast={showToast}
+          inputId="staffApiBase"
+        />
+      </Toolbar>
+    </AppBar>
+  );
+}

@@ -1,10 +1,14 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import axios from "axios";
-import "./Admin.css";
+import { Box, Grid } from "@mui/material";
+import useToast from "../hooks/useToast.js";
+import Toast from "../components/common/Toast.jsx";
+import AdminTopbar from "../components/admin/AdminTopbar.jsx";
+import AdminSidebar from "../components/admin/AdminSidebar.jsx";
+import { adminApi as api } from "../utils/api.js";
 
-import StaffTab from "../tabs/RosterTab.jsx";
-import RosterTab from "../tabs/ReportsTab.jsx";
+import StaffTab from "../tabs/StaffTab.jsx";
+import RosterTab from "../tabs/RosterTab.jsx";
 import StationsTab from "../tabs/StationsTab.jsx";
 import ClockingTab from "../tabs/ClockingTab.jsx";
 import RegistrationsTab from "../tabs/RegistrationsTab.jsx";
@@ -12,33 +16,14 @@ import ReportsTab from "../tabs/ReportsTab.jsx";
 import PayslipsTab from "../tabs/PayslipsTab.jsx";
 import ExceptionsTab from "../tabs/ExceptionsTab.jsx";
 
+export { api };
+
 // ─── QueryClient ──────────────────────────────────────────────────────────────
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false },
   },
 });
-
-// ─── Axios instance (shared across all tabs via export) ───────────────────────
-export const api = axios.create({
-  headers: { "Content-Type": "application/json" },
-});
-
-// Inject base URL from localStorage before every request
-api.interceptors.request.use((config) => {
-  const base = localStorage.getItem("timeclock_api_base") || "";
-  if (!base) return Promise.reject(new Error("Set API base URL first."));
-  config.baseURL = base.replace(/\/$/, "");
-  return config;
-});
-
-api.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    console.error("API error:", err.response?.status, err.message);
-    return Promise.reject(err);
-  },
-);
 
 // ─── Tabs config ──────────────────────────────────────────────────────────────
 const TABS = [
@@ -56,16 +41,6 @@ const TABS = [
   { id: "exceptions", label: "Exception Reports", Component: ExceptionsTab },
 ];
 
-// ─── Toast hook (shared) ──────────────────────────────────────────────────────
-export function useToast() {
-  const [toast, setToast] = useState({ msg: "", error: false, visible: false });
-  const showToast = useCallback((msg, isError = false) => {
-    setToast({ msg, error: isError, visible: true });
-    setTimeout(() => setToast((t) => ({ ...t, visible: false })), 2600);
-  }, []);
-  return { toast, showToast };
-}
-
 // ─── Root App ─────────────────────────────────────────────────────────────────
 function AdminApp() {
   const [activeTab, setActiveTab] = useState("staff");
@@ -74,71 +49,46 @@ function AdminApp() {
   );
   const { toast, showToast } = useToast();
 
-  const saveApi = () => {
-    const v = apiBase.trim();
-    if (!v) {
-      showToast("API base URL required.", true);
-      return;
-    }
-    localStorage.setItem("timeclock_api_base", v);
-    showToast("API base URL saved.");
-  };
-
   const ActiveComponent = TABS.find((t) => t.id === activeTab)?.Component;
 
   return (
-    <div>
-      <div className="ambient" />
+    <Box>
+      <Box
+        sx={{
+          position: "fixed",
+          inset: "-20% 0 0 0",
+          zIndex: 0,
+          pointerEvents: "none",
+          background:
+            "radial-gradient(circle at 20% 20%, rgba(210, 106, 45, 0.2), transparent 50%), radial-gradient(circle at 80% 10%, rgba(46, 111, 95, 0.2), transparent 55%), radial-gradient(circle at 40% 80%, rgba(173, 107, 190, 0.15), transparent 60%)",
+        }}
+      />
 
-      <header className="topbar">
-        <div className="brand">
-          <div className="brand-mark">TC</div>
-          <div>
-            <div className="brand-title">Timeclock Admin</div>
-            <div className="brand-sub">
-              Roster, clocking, pay, and compliance
-            </div>
-          </div>
-        </div>
-        <div className="api-config">
-          <label htmlFor="apiBase">API Base URL</label>
-          <input
-            id="apiBase"
-            type="text"
-            placeholder="https://api.yourapp.com"
-            value={apiBase}
-            onChange={(e) => setApiBase(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && saveApi()}
-          />
-          <button onClick={saveApi}>Save</button>
-        </div>
-      </header>
+      <AdminTopbar
+        apiBase={apiBase}
+        setApiBase={setApiBase}
+        showToast={showToast}
+      />
 
-      <main className="layout">
-        <nav className="sidebar">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              className={`tab ${activeTab === t.id ? "active" : ""}`}
-              onClick={() => setActiveTab(t.id)}
-            >
-              {t.label}
-            </button>
-          ))}
-        </nav>
-
-        <section className="content">
-          {ActiveComponent && <ActiveComponent showToast={showToast} />}
-        </section>
-      </main>
-
-      <div
-        className={`toast ${toast.visible ? "show" : ""}`}
-        style={{ background: toast.error ? "#8f2d1a" : "#1f1b16" }}
+      <Box
+        sx={{ position: "relative", zIndex: 1, px: { xs: 2, md: 5 }, py: 4 }}
       >
-        {toast.msg}
-      </div>
-    </div>
+        <Grid container spacing={3}>
+          <Grid size={{ xs: 12, md: 3 }}>
+            <AdminSidebar
+              tabs={TABS}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, md: 9 }}>
+            {ActiveComponent && <ActiveComponent showToast={showToast} />}
+          </Grid>
+        </Grid>
+      </Box>
+
+      <Toast toast={toast} />
+    </Box>
   );
 }
 

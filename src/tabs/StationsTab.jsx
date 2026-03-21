@@ -1,7 +1,17 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../pages/Admin.jsx";
-import { normalizeList, DataTable, Field, errMsg } from "./shared.jsx";
+import { adminApi as api } from "../utils/api.js";
+import {
+  normalizeList,
+  DataTable,
+  Field,
+  errMsg,
+  FormActions,
+  PageHeader,
+  PanelCard,
+  PrimaryButton,
+  TwoColumn,
+} from "./shared.jsx";
 
 export default function StationsTab({ showToast }) {
   const qc = useQueryClient();
@@ -31,19 +41,19 @@ export default function StationsTab({ showToast }) {
 
   return (
     <div>
-      <div className="panel-header">
-        <h2>Clocking Stations</h2>
-        <p>Manage biometric and card stations used for clocking in and out.</p>
-      </div>
-      <div className="grid two">
-        <form
-          className="card"
+      <PageHeader
+        title="Clocking Stations"
+        description="Manage biometric and card stations used for clocking in and out."
+      />
+      <TwoColumn>
+        <PanelCard
+          title="Add Station"
+          component="form"
           onSubmit={(e) => {
             e.preventDefault();
             saveMutation.mutate(form);
           }}
         >
-          <h3>Add Station</h3>
           <Field label="Name">
             <input
               name="name"
@@ -71,27 +81,24 @@ export default function StationsTab({ showToast }) {
               <option>Retinal Scan</option>
             </select>
           </Field>
-          <div className="form-actions">
-            <button type="submit" disabled={saveMutation.isPending}>
-              {saveMutation.isPending ? "Saving…" : "Save Station"}
-            </button>
-          </div>
-        </form>
+          <FormActions>
+            <PrimaryButton type="submit" disabled={saveMutation.isPending}>
+              {saveMutation.isPending ? "Saving..." : "Save Station"}
+            </PrimaryButton>
+          </FormActions>
+        </PanelCard>
 
-        <div className="card">
-          <h3>Stations</h3>
-          <button
-            className="inline"
+        <PanelCard title="Stations">
+          <PrimaryButton
             onClick={() => refetch()}
             disabled={isFetching}
+            sx={{ mb: 1.5 }}
           >
-            {isFetching ? "Loading…" : "Refresh"}
-          </button>
-          <div className="table">
-            <DataTable rows={stationRows} />
-          </div>
-        </div>
-      </div>
+            {isFetching ? "Loading..." : "Refresh"}
+          </PrimaryButton>
+          <DataTable rows={stationRows} />
+        </PanelCard>
+      </TwoColumn>
     </div>
   );
 }

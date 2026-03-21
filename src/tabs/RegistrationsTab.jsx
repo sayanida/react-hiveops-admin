@@ -1,43 +1,77 @@
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '../pages/Admin.jsx'
-import { normalizeList, DataTable, Field, errMsg } from './shared.jsx'
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { adminApi as api } from "../utils/api.js";
+import {
+  normalizeList,
+  DataTable,
+  Field,
+  errMsg,
+  FormActions,
+  InlineFields,
+  PageHeader,
+  PanelCard,
+  PrimaryButton,
+  TwoColumn,
+} from "./shared.jsx";
 
 export default function RegistrationsTab({ showToast }) {
-  const qc = useQueryClient()
-  const [form,       setForm]       = useState({ staffId: '', method: '', identifier: '', reason: '' })
-  const [regSearch,  setRegSearch]  = useState('')
-  const [searchKey,  setSearchKey]  = useState(null)
+  const qc = useQueryClient();
+  const [form, setForm] = useState({
+    staffId: "",
+    method: "",
+    identifier: "",
+    reason: "",
+  });
+  const [regSearch, setRegSearch] = useState("");
+  const [searchKey, setSearchKey] = useState(null);
 
-  const set = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }))
+  const set = (e) =>
+    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
   const { data: regRows = [], isFetching } = useQuery({
-    queryKey: ['registrations', searchKey],
-    queryFn: () => api.get(`/registrations${searchKey ? `?staffId=${encodeURIComponent(searchKey)}` : ''}`).then(r => normalizeList(r.data)),
+    queryKey: ["registrations", searchKey],
+    queryFn: () =>
+      api
+        .get(
+          `/registrations${searchKey ? `?staffId=${encodeURIComponent(searchKey)}` : ""}`,
+        )
+        .then((r) => normalizeList(r.data)),
     enabled: searchKey !== null,
-  })
+  });
 
   const saveMutation = useMutation({
-    mutationFn: (payload) => api.post('/registrations', payload),
+    mutationFn: (payload) => api.post("/registrations", payload),
     onSuccess: () => {
-      showToast('Registration saved.')
-      setForm({ staffId: '', method: '', identifier: '', reason: '' })
-      qc.invalidateQueries({ queryKey: ['registrations'] })
+      showToast("Registration saved.");
+      setForm({ staffId: "", method: "", identifier: "", reason: "" });
+      qc.invalidateQueries({ queryKey: ["registrations"] });
     },
-    onError: (err) => showToast(errMsg(err, 'Failed to register'), true),
-  })
+    onError: (err) => showToast(errMsg(err, "Failed to register"), true),
+  });
 
   return (
     <div>
-      <div className="panel-header">
-        <h2>Cards & Biometrics</h2>
-        <p>Register or re-register cards and biometric identifiers.</p>
-      </div>
-      <div className="grid two">
-        <form className="card" onSubmit={e => { e.preventDefault(); saveMutation.mutate(form) }}>
-          <h3>Register / Re-Register</h3>
+      <PageHeader
+        title="Cards & Biometrics"
+        description="Register or re-register cards and biometric identifiers."
+      />
+      <TwoColumn>
+        <PanelCard
+          title="Register / Re-Register"
+          component="form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            saveMutation.mutate(form);
+          }}
+        >
           <Field label="Staff ID">
-            <input name="staffId" type="text" required value={form.staffId} onChange={set} />
+            <input
+              name="staffId"
+              type="text"
+              required
+              value={form.staffId}
+              onChange={set}
+            />
           </Field>
           <Field label="Method">
             <select name="method" required value={form.method} onChange={set}>
@@ -49,7 +83,14 @@ export default function RegistrationsTab({ showToast }) {
             </select>
           </Field>
           <Field label="Identifier">
-            <input name="identifier" type="text" placeholder="Card number or biometric token" required value={form.identifier} onChange={set} />
+            <input
+              name="identifier"
+              type="text"
+              placeholder="Card number or biometric token"
+              required
+              value={form.identifier}
+              onChange={set}
+            />
           </Field>
           <Field label="Reason">
             <select name="reason" required value={form.reason} onChange={set}>
@@ -60,26 +101,32 @@ export default function RegistrationsTab({ showToast }) {
               <option>Injury to hands/fingers</option>
             </select>
           </Field>
-          <div className="form-actions">
-            <button type="submit" disabled={saveMutation.isPending}>
-              {saveMutation.isPending ? 'Registering…' : 'Register'}
-            </button>
-          </div>
-        </form>
+          <FormActions>
+            <PrimaryButton type="submit" disabled={saveMutation.isPending}>
+              {saveMutation.isPending ? "Registering..." : "Register"}
+            </PrimaryButton>
+          </FormActions>
+        </PanelCard>
 
-        <div className="card">
-          <h3>Current Registrations</h3>
-          <div className="form-row inline">
-            <input type="text" placeholder="Staff ID" value={regSearch}
-              onChange={e => setRegSearch(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && setSearchKey(regSearch)} />
-            <button onClick={() => setSearchKey(regSearch)} disabled={isFetching}>
-              {isFetching ? 'Loading…' : 'Load'}
-            </button>
-          </div>
-          <div className="table"><DataTable rows={regRows} /></div>
-        </div>
-      </div>
+        <PanelCard title="Current Registrations">
+          <InlineFields>
+            <input
+              type="text"
+              placeholder="Staff ID"
+              value={regSearch}
+              onChange={(e) => setRegSearch(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && setSearchKey(regSearch)}
+            />
+            <PrimaryButton
+              onClick={() => setSearchKey(regSearch)}
+              disabled={isFetching}
+            >
+              {isFetching ? "Loading..." : "Load"}
+            </PrimaryButton>
+          </InlineFields>
+          <DataTable rows={regRows} />
+        </PanelCard>
+      </TwoColumn>
     </div>
-  )
+  );
 }
