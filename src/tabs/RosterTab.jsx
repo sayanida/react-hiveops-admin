@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '../Admin.jsx'
+import { api } from '../pages/Admin.jsx'
 import { normalizeList, DataTable, Field, errMsg } from './shared.jsx'
 
 export default function RosterTab({ showToast }) {

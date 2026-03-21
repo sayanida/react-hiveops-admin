@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { api } from '../Admin.jsx'
+import { api } from '../pages/Admin.jsx'
 import { Field, errMsg } from './shared.jsx'
 
 export default function ClockingTab({ showToast }) {

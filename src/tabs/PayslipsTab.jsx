@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { api } from '../Admin.jsx'
+import { api } from '../pages/Admin.jsx'
 import { normalizeList, DataTable, errMsg } from './shared.jsx'
 
 export default function PayslipsTab({ showToast }) {
