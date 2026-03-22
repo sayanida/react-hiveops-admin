@@ -1,0 +1,51 @@
+# Pipeline dùng cho repo Azure DevOps: bee-web, nhánh: master
+# Copy file này vào root repo bee-web và đổi tên thành azure-pipelines.yml (hoặc đăng ký pipeline trỏ tới file này)
+#
+# Yêu cầu trên Azure DevOps:
+# - Service connection: AzureConnection-DevOpsGroup1-frontend
+# - App Service: devopsgroup1frontend
+#
+# Chỉnh biến buildFolder nếu output khác: dist (Vite), build (Create React App), dist/<ten-app> (Angular)
+
+trigger:
+  branches:
+    include:
+      - master
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  azureSubscription: 'AzureConnection-DevOpsGroup1-frontend'
+  webAppName: 'devopsgroup1frontend'
+  buildFolder: 'dist'
+
+steps:
+  - checkout: self
+    fetchDepth: 0
+
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '20.x'
+    displayName: 'Cài Node.js'
+
+  - script: |
+      npm ci
+      npm run build
+    displayName: 'npm ci và build'
+
+  - task: ArchiveFiles@2
+    displayName: 'Nén thư mục build'
+    inputs:
+      rootFolderOrFile: '$(System.DefaultWorkingDirectory)/$(buildFolder)'
+      includeRootFolder: false
+      archiveType: zip
+      archiveFile: '$(Build.ArtifactStagingDirectory)/app.zip'
+      replaceExistingArchive: true
+
+  - task: AzureWebApp@1
+    displayName: 'Deploy lên Azure App Service'
+    inputs:
+      azureSubscription: $(azureSubscription)
+      appName: $(webAppName)
+      package: '$(Build.ArtifactStagingDirectory)/app.zip'
