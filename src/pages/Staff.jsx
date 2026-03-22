@@ -1,3 +1,17 @@
+/*
+Staff.jsx
+	Entry page for the staff dashboard
+	•	Wraps StaffTopbar and StaffDashboard with QueryClientProvider
+	•	Manages API base URL (farm_staff_api_base) and toast notifications
+	•	Contains StaffApp for state management
+	
+  Difference from Admin.jsx:
+	•	Staff-specific theme and display
+	•	Uses staff API base from localStorage
+	
+  Note: QueryClient settings affect dashboard behavior due to multiple API calls and UI interactions
+*/
+
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Box } from "@mui/material";

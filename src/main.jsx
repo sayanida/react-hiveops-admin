@@ -1,3 +1,13 @@
+/*
+Main.jsx
+	The entry point of the app, mounts React to the DOM.
+	•	Apply MUI theme (ThemeProvider) and global CSS reset (CssBaseline)
+	•	Define routes (/, /admin, /staff) and set default redirect (/ → /staff)
+
+Notes: Usually this file is not modified
+  - serves as the foundation of the app
+*/
+
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";

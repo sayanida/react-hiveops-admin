@@ -1,3 +1,10 @@
+/*
+useToast.js
+	Custom hook to manage toast (temporary) notifications
+	•	Keeps internal state for toast visibility
+	•	showToast(msg, isError) shows a toast, which automatically hides after a short time
+*/
+
 import { useState, useCallback } from "react";
 
 export default function useToast() {

@@ -1,3 +1,12 @@
+/*
+Admin.jsx
+	Entry page for the admin dashboard
+	•	Wraps child components (AdminTopbar, AdminSidebar, tab components) with QueryClientProvider
+	•	Manages tab switching, API base URL, and toast notifications
+	•	Contains AdminApp (state management) and TABS (tab settings)
+	•	Exports adminApi for API calls
+*/
+
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Box, Grid } from "@mui/material";

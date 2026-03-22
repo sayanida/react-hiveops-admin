@@ -1,3 +1,11 @@
+/*
+ApiConfigBar.jsx
+  A small UI component for entering and saving the API base URL.
+	•	Input URL via a TextField
+	•	Save to localStorage with a button or Enter key
+	•	Shows an error if input is empty
+*/
+
 import { Button, Stack, TextField } from "@mui/material";
 
 export default function ApiConfigBar({

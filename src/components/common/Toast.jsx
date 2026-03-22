@@ -1,3 +1,10 @@
+/*
+Toast.jsx
+	Generic toast notification component (small temporary message on screen)
+	•	Uses MUI Snackbar + Alert
+	•	Automatically closes after ~2.6 seconds
+*/
+
 import { Alert, Snackbar } from "@mui/material";
 
 export default function Toast({ toast }) {

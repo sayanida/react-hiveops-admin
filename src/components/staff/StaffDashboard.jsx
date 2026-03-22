@@ -1,3 +1,18 @@
+/*
+StaffDashboard.jsx
+	Main dashboard component for staff
+	•	Combines multiple card components: ReaderPanel, EventsCard, RosterCard, BreaksCard
+	•	Uses staffApi for API calls
+	•	Uses react-query’s useQuery / useMutation extensively
+	•	Native input/select elements can be replaced with MUI TextField/Select, keeping value and onChange
+	•	Need to pay attention to date and text field handling
+	
+  Internal Components:
+	•	StaffCard: Generic card layout
+	•	ReaderPanel: IoT reader operations (token input, registration, action sending)
+	•	EventsCard, RosterCard, BreaksCard: Fetch and display data
+*/
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Box, Card, CardContent, Typography } from "@mui/material";

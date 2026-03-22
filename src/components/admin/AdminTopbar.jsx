@@ -1,3 +1,11 @@
+/*  
+•	AdminTopbar.jsx
+  Renders the top navigation bar of the admin interface.
+	•	Displays brand logo, title, and subtitle
+	•	Includes ApiConfigBar for viewing and editing the API base URL
+	•	Props: API URL, update function, toast notification function, input ID
+*/
+
 import { AppBar, Box, Toolbar, Typography } from "@mui/material";
 import ApiConfigBar from "../common/ApiConfigBar.jsx";
 

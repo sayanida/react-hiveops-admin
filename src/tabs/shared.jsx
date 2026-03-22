@@ -1,3 +1,26 @@
+/*
+shared.jsx
+	A shared file containing small reusable UI components and utility functions used across multiple pages or tabs.
+	
+  Functionality / Exports:
+	•	normalizeList → Normalizes API responses into arrays
+	•	DataTable → Generic table component
+	•	Field / InlineFields → Form input wrappers with label styling for native input/select/textarea
+	•	PageHeader → Displays page title and description
+	•	TwoColumn → Two-column responsive layout wrapper
+	•	PanelCard → Standard card component with title + content, supports onSubmit
+	•	FormActions → Wrapper for form action buttons row
+	•	PrimaryButton / GhostButton → Themed buttons (filled / outlined)
+	•	errMsg → Helper to extract messages from Axios errors
+	
+  Notes / MUI migration:
+	•	Field and InlineFields apply CSS directly to native input elements
+	•	When replacing with MUI TextField / Select, adjust or remove these styles
+	
+  Recommended approach:
+  keep Field as FormControl + FormLabel and replace child inputs with MUI components
+*/
+
 import {
   Button,
   Box,

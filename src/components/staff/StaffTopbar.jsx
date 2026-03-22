@@ -1,3 +1,11 @@
+/*
+StaffTopbar.jsx
+	Top bar for staff pages
+	•	Displays brand badge, title, and subtitle
+	•	Includes ApiConfigBar (inputId set to staffApiBase)
+	•	Depends on MUI AppBar/Toolbar and theme
+*/
+
 import { AppBar, Box, Toolbar, Typography } from "@mui/material";
 import ApiConfigBar from "../common/ApiConfigBar.jsx";
 

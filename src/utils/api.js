@@ -1,3 +1,13 @@
+/*
+api.js
+	Helper for creating Axios clients.
+	•	Read API base URL from localStorage and set it for requests
+	•	Reject requests if the base URL is not set; log and re-throw response errors
+	•	Export adminApi and staffApi for different endpoints
+	
+  Notes: Standardizes API access and error handling
+*/
+
 import axios from "axios";
 
 function createApiClient(storageKey) {
