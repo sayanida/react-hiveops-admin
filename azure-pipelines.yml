@@ -1,11 +1,9 @@
-# Pipeline dùng cho repo Azure DevOps: bee-web, nhánh: master
-# Copy file này vào root repo bee-web và đổi tên thành azure-pipelines.yml (hoặc đăng ký pipeline trỏ tới file này)
+# Azure DevOps pipeline: build Vite + React (bee-web) và deploy lên Azure App Service
+# Branch: master | App Service: devopsgroup1frontend
+# Service connection: AzureConnection-DevOpsGroup1-frontend
 #
-# Yêu cầu trên Azure DevOps:
-# - Service connection: AzureConnection-DevOpsGroup1-frontend
-# - App Service: devopsgroup1frontend
-#
-# Chỉnh biến buildFolder nếu output khác: dist (Vite), build (Create React App), dist/<ten-app> (Angular)
+# Trước khi chạy: trong Project Settings → Service connections, tạo/kết nối
+# "AzureConnection-DevOpsGroup1-frontend" với quyền deploy tới resource group chứa app.
 
 trigger:
   branches:
@@ -16,36 +14,39 @@ pool:
   vmImage: ubuntu-latest
 
 variables:
-  azureSubscription: 'AzureConnection-DevOpsGroup1-frontend'
-  webAppName: 'devopsgroup1frontend'
-  buildFolder: 'dist'
+  nodeVersion: '20.x'
 
 steps:
   - checkout: self
-    fetchDepth: 0
+    displayName: Checkout bee-web
 
   - task: NodeTool@0
+    displayName: Use Node.js $(nodeVersion)
     inputs:
-      versionSpec: '20.x'
-    displayName: 'Cài Node.js'
+      versionSpec: $(nodeVersion)
 
-  - script: |
-      npm ci
-      npm run build
-    displayName: 'npm ci và build'
+  - script: npm ci
+    displayName: npm ci
+
+  - script: npm run build
+    displayName: npm run build
 
   - task: ArchiveFiles@2
-    displayName: 'Nén thư mục build'
+    displayName: Zip thư mục dist
     inputs:
-      rootFolderOrFile: '$(System.DefaultWorkingDirectory)/$(buildFolder)'
+      rootFolderOrFile: '$(System.DefaultWorkingDirectory)/dist'
       includeRootFolder: false
       archiveType: zip
       archiveFile: '$(Build.ArtifactStagingDirectory)/app.zip'
       replaceExistingArchive: true
 
   - task: AzureWebApp@1
-    displayName: 'Deploy lên Azure App Service'
+    displayName: Deploy lên Azure App Service
     inputs:
-      azureSubscription: $(azureSubscription)
-      appName: $(webAppName)
+      azureSubscription: 'AzureConnection-DevOpsGroup1-frontend'
+      appType: webAppLinux
+      appName: 'devopsgroup1frontend'
       package: '$(Build.ArtifactStagingDirectory)/app.zip'
+      runtimeStack: 'NODE|20-lts'
+      # SPA tĩnh: zip vào wwwroot, serve lắng nghe $PORT (App Service Linux)
+      startUpCommand: 'npx --yes serve@14 -s /home/site/wwwroot -l $PORT'
