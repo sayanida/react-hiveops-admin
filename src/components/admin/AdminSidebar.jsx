@@ -10,7 +10,7 @@ import { Button, Paper, Stack } from "@mui/material";
 
 export default function AdminSidebar({ tabs, activeTab, setActiveTab }) {
   return (
-    <Paper variant="outlined" sx={{ p: 1, borderRadius: 2 }}>
+    <Paper variant="outlined" sx={{ p: 1 }}>
       <Stack spacing={1}>
         {tabs.map((t) => {
           const isActive = activeTab === t.id;

@@ -37,7 +37,6 @@ export default function AdminTopbar({ apiBase, setApiBase, showToast }) {
             sx={{
               width: 44,
               height: 44,
-              borderRadius: 1.5,
               display: "grid",
               placeItems: "center",
               fontWeight: 700,
