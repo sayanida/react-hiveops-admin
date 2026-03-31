@@ -100,7 +100,6 @@ export function Field({ label, children }) {
             width: "100%",
             font: "inherit",
             padding: "10px 12px",
-            borderRadius: 1.5,
             border: "1px solid",
             borderColor: "divider",
             backgroundColor: "background.paper",
@@ -156,7 +155,6 @@ export function PanelCard({ title, children, component = "div", onSubmit }) {
       component={component}
       onSubmit={onSubmit}
       sx={{
-        borderRadius: 2,
         boxShadow: "0 10px 24px rgba(28, 26, 23, 0.08)",
       }}
     >
@@ -183,7 +181,6 @@ export function InlineFields({ children }) {
         "& input, & select": {
           font: "inherit",
           padding: "10px 12px",
-          borderRadius: 1.5,
           border: "1px solid",
           borderColor: "divider",
           backgroundColor: "background.paper",

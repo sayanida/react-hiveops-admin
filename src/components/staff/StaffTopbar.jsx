@@ -37,7 +37,6 @@ export default function StaffTopbar({ apiBase, setApiBase, showToast }) {
             sx={{
               width: 46,
               height: 46,
-              borderRadius: 1.5,
               display: "grid",
               placeItems: "center",
               fontWeight: 700,

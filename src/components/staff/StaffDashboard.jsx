@@ -39,7 +39,7 @@ function StaffCard({ title, action, children }) {
   return (
     <Card
       variant="outlined"
-      sx={{ borderRadius: 2, boxShadow: "0 10px 24px rgba(28, 26, 23, 0.08)" }}
+      sx={{ boxShadow: "0 10px 24px rgba(28, 26, 23, 0.08)" }}
     >
       <CardContent>
         <Box
@@ -107,7 +107,6 @@ function ReaderPanel({ showToast }) {
     <Card
       variant="outlined"
       sx={{
-        borderRadius: 2,
         boxShadow: "0 10px 24px rgba(28, 26, 23, 0.08)",
       }}
     >
@@ -131,7 +130,6 @@ function ReaderPanel({ showToast }) {
             onChange={(e) => setWorkerToken(e.target.value)}
             style={{
               padding: "10px 12px",
-              borderRadius: 10,
               border: "1px solid #d9d9d9",
             }}
           />
@@ -143,7 +141,6 @@ function ReaderPanel({ showToast }) {
             onChange={(e) => setWorkerName(e.target.value)}
             style={{
               padding: "10px 12px",
-              borderRadius: 10,
               border: "1px solid #d9d9d9",
             }}
           />
@@ -199,7 +196,6 @@ function ReaderPanel({ showToast }) {
             onChange={(e) => setBreakReason(e.target.value)}
             style={{
               padding: "10px 12px",
-              borderRadius: 10,
               border: "1px solid #d9d9d9",
             }}
           >
@@ -217,7 +213,6 @@ function ReaderPanel({ showToast }) {
             onChange={(e) => setBreakNote(e.target.value)}
             style={{
               padding: "10px 12px",
-              borderRadius: 10,
               border: "1px solid #d9d9d9",
             }}
           />
