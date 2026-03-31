@@ -48,7 +48,11 @@ export function normalizeList(resp) {
 }
 
 // ─── Generic data table ───────────────────────────────────────────────────────
-export function DataTable({ rows }) {
+export function DataTable({
+  rows,
+  renderRowActions,
+  actionsHeader = "Actions",
+}) {
   if (!rows || rows.length === 0) {
     return (
       <Paper variant="outlined" sx={{ p: 2 }}>
@@ -61,6 +65,8 @@ export function DataTable({ rows }) {
 
   const headers = Object.keys(rows[0]);
 
+  const hasActions = typeof renderRowActions === "function";
+
   return (
     <TableContainer component={Paper} variant="outlined">
       <Table size="small">
@@ -71,6 +77,11 @@ export function DataTable({ rows }) {
                 {h}
               </TableCell>
             ))}
+            {hasActions ? (
+              <TableCell align="right" sx={{ fontWeight: 700 }}>
+                {actionsHeader}
+              </TableCell>
+            ) : null}
           </TableRow>
         </TableHead>
         <TableBody>
@@ -79,6 +90,9 @@ export function DataTable({ rows }) {
               {headers.map((h) => (
                 <TableCell key={h}>{row[h] ?? ""}</TableCell>
               ))}
+              {hasActions ? (
+                <TableCell align="right">{renderRowActions(row, i)}</TableCell>
+              ) : null}
             </TableRow>
           ))}
         </TableBody>
