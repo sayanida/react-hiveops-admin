@@ -32,13 +32,56 @@ const initialForm = {
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MOBILE_RE = /^0\d{9}$/;
+const MOBILE_RE = /^\d{8,}$/;
 const POST_CODE_RE = /^\d{4}$/;
+
+const SEX_TO_API = {
+  Male: "MALE",
+  Female: "FEMALE",
+  Other: "OTHER",
+  MALE: "MALE",
+  FEMALE: "FEMALE",
+  OTHER: "OTHER",
+};
+
+const CONTRACT_TO_API = {
+  Casual: "CASUAL",
+  "Full Time": "FULL_TIME",
+  "Part Time": "PART_TIME",
+  CASUAL: "CASUAL",
+  FULL_TIME: "FULL_TIME",
+  PART_TIME: "PART_TIME",
+};
+
+const SEX_TO_FORM = {
+  MALE: "MALE",
+  FEMALE: "FEMALE",
+  OTHER: "OTHER",
+  Male: "MALE",
+  Female: "FEMALE",
+  Other: "OTHER",
+};
+
+const CONTRACT_TO_FORM = {
+  CASUAL: "CASUAL",
+  FULL_TIME: "FULL_TIME",
+  PART_TIME: "PART_TIME",
+  Casual: "CASUAL",
+  "Full Time": "FULL_TIME",
+  "Part Time": "PART_TIME",
+};
 
 function validateStaffForm(values) {
   if (!values.name.trim()) return "Name is required.";
   if (!values.contractType) return "Please select a contract type.";
   if (!values.role.trim()) return "Role is required.";
+
+  if (values.standardRate.trim() === "") {
+    return "Standard rate is required.";
+  }
+  if (values.overtimeRate.trim() === "") {
+    return "Overtime rate is required.";
+  }
 
   if (values.email && !EMAIL_RE.test(values.email.trim())) {
     return "Invalid email format.";
@@ -62,7 +105,6 @@ function validateStaffForm(values) {
   }
 
   for (const key of ["standardRate", "overtimeRate"]) {
-    if (!values[key]) continue;
     const num = Number(values[key]);
     if (Number.isNaN(num) || num < 0) {
       return "Hourly rate must be a number greater than or equal to 0.";
@@ -96,10 +138,7 @@ export default function StaffTab({ showToast }) {
 
   // ── Save mutation
   const saveMutation = useMutation({
-    mutationFn: ({ id, payload }) =>
-      id
-        ? api.patch(`/staff/${encodeURIComponent(id)}`, payload)
-        : api.post("/staff", payload),
+    mutationFn: (payload) => api.post("/staff/save", payload),
     onSuccess: () => {
       showToast(editingId ? "Staff updated." : "Staff saved.");
       setForm(initialForm);
@@ -116,12 +155,13 @@ export default function StaffTab({ showToast }) {
       id: String(rowId || ""),
       name: row.name ?? "",
       birthday: row.birthday ?? "",
-      sex: row.sex ?? "",
+      sex: SEX_TO_FORM[row.sex] ?? "",
       mobilePhone: row.mobilePhone ?? row.mobile_phone ?? "",
       email: row.email ?? "",
       address: row.address ?? "",
       postCode: row.postCode ?? row.post_code ?? "",
-      contractType: row.contractType ?? row.contract_type ?? "",
+      contractType:
+        CONTRACT_TO_FORM[row.contractType ?? row.contract_type] ?? "",
       role: row.role ?? "",
       standardRate: String(row.standardRate ?? row.standard_rate ?? ""),
       overtimeRate: String(row.overtimeRate ?? row.overtime_rate ?? ""),
@@ -141,18 +181,35 @@ export default function StaffTab({ showToast }) {
       return;
     }
 
+    const trimmedId = form.id.trim();
+    const name = form.name.trim();
+    const role = form.role.trim();
+    const contractType = CONTRACT_TO_API[form.contractType.trim()] || "";
+    const standardRate = Number(form.standardRate.trim());
+    const overtimeRate = Number(form.overtimeRate.trim());
+    const birthday = form.birthday.trim();
+    const sex = SEX_TO_API[form.sex.trim()] || "";
+    const mobilePhone = form.mobilePhone.trim();
+    const email = form.email.trim();
+    const address = form.address.trim();
+    const postCode = form.postCode.trim();
+
     const payload = {
-      ...form,
-      name: form.name.trim(),
-      birthday: form.birthday.trim(),
-      mobilePhone: form.mobilePhone.trim(),
-      email: form.email.trim(),
-      address: form.address.trim(),
-      postCode: form.postCode.trim(),
-      role: form.role.trim(),
+      ...(trimmedId ? { id: Number(trimmedId) } : {}),
+      name,
+      role,
+      contractType,
+      standardRate,
+      overtimeRate,
+      ...(birthday ? { birthday } : {}),
+      ...(sex ? { sex } : {}),
+      ...(mobilePhone ? { mobilePhone } : {}),
+      ...(email ? { email } : {}),
+      ...(address ? { address } : {}),
+      ...(postCode ? { postCode } : {}),
     };
 
-    saveMutation.mutate({ id: editingId || form.id || null, payload });
+    saveMutation.mutate(payload);
   };
 
   return (
@@ -208,9 +265,9 @@ export default function StaffTab({ showToast }) {
               fullWidth
             >
               <MenuItem value="">Select</MenuItem>
-              <MenuItem value="Male">Male</MenuItem>
-              <MenuItem value="Female">Female</MenuItem>
-              <MenuItem value="Other">Other</MenuItem>
+              <MenuItem value="MALE">Male</MenuItem>
+              <MenuItem value="FEMALE">Female</MenuItem>
+              <MenuItem value="OTHER">Other</MenuItem>
             </TextField>
           </Field>
           <Field label="Mobile Phone">
@@ -218,9 +275,9 @@ export default function StaffTab({ showToast }) {
               name="mobilePhone"
               value={form.mobilePhone}
               onChange={set}
-              pattern="^0\d{9}$"
+              pattern="^\d{8,}$"
               inputMode="numeric"
-              title="Please enter a valid mobile number (e.g. 0400123456)"
+              title="Please enter valid mobile phone number (e.g. 0412345678)"
               size="small"
               fullWidth
             />
@@ -270,9 +327,9 @@ export default function StaffTab({ showToast }) {
               fullWidth
             >
               <MenuItem value="">Select</MenuItem>
-              <MenuItem value="Casual">Casual</MenuItem>
-              <MenuItem value="Full Time">Full Time</MenuItem>
-              <MenuItem value="Part Time">Part Time</MenuItem>
+              <MenuItem value="CASUAL">Casual</MenuItem>
+              <MenuItem value="FULL_TIME">Full Time</MenuItem>
+              <MenuItem value="PART_TIME">Part Time</MenuItem>
             </TextField>
           </Field>
           <Field label="Role">
