@@ -5,7 +5,6 @@ import { adminApi as api } from "../utils/api.js";
 import {
   normalizeList,
   Field,
-  errMsg,
   FormActions,
   GhostButton,
   InlineFields,
@@ -15,7 +14,7 @@ import {
   TwoColumn,
 } from "./shared.jsx";
 
-// Turn one picked date into a 7-day window
+// selected date + next 6 days
 function getWeekRange(date) {
   if (!date) return { from: "", to: "" };
 
@@ -33,7 +32,6 @@ function getWeekRange(date) {
   };
 }
 
-// Calculate total minutes from start and end time
 function getTotalMinutes(startTime, endTime) {
   if (!startTime || !endTime) return null;
 
@@ -64,21 +62,52 @@ function formatHours(hours) {
   return formatMinutes(totalMinutes);
 }
 
+function getApiErrorMessage(err, fallback = "Request failed") {
+  const data = err?.response?.data;
+
+  if (typeof data === "string" && data.trim()) {
+    return data;
+  }
+
+  if (data && typeof data === "object") {
+    if (typeof data.message === "string" && data.message.trim()) {
+      return data.message;
+    }
+
+    if (typeof data.error === "string" && data.error.trim()) {
+      return data.error;
+    }
+
+    try {
+      return JSON.stringify(data);
+    } catch {
+      return fallback;
+    }
+  }
+
+  if (typeof err?.message === "string" && err.message.trim()) {
+    return err.message;
+  }
+
+  return fallback;
+}
+
 export default function RosterTab({ showToast }) {
   const qc = useQueryClient();
 
   const [form, setForm] = useState({
     id: "",
-    staff_id: "",
-    staff_name: "",
+    staffId: "",
+    staffName: "",
     date: "",
-    start_time: "",
-    end_time: "",
+    startTime: "",
+    endTime: "",
+    status: "SCHEDULED",
   });
 
   const [filters, setFilters] = useState({
-    staff_id: "",
-    staff_name: "",
+    staffId: "",
+    staffName: "",
     weekDate: "",
   });
 
@@ -93,81 +122,97 @@ export default function RosterTab({ showToast }) {
     setFilters((f) => ({ ...f, [e.target.name]: e.target.value }));
 
   const weekRange = getWeekRange(filters.weekDate);
-  const totalMinutes = getTotalMinutes(form.start_time, form.end_time);
+  const totalMinutes = getTotalMinutes(form.startTime, form.endTime);
   const totalLabel = formatMinutes(totalMinutes);
 
-  // Load one staff member's roster for one 7-day window
   const { data: rosterRows = [], isFetching } = useQuery({
     queryKey: ["roster", loadKey],
     queryFn: () =>
       api
         .get(
-          `/roster?staff_id=${encodeURIComponent(loadKey.staff_id)}&from=${encodeURIComponent(loadKey.from)}&to=${encodeURIComponent(loadKey.to)}`,
+          `/roster?staffId=${encodeURIComponent(loadKey.staffId)}&from=${encodeURIComponent(loadKey.from)}&to=${encodeURIComponent(loadKey.to)}`,
         )
         .then((r) => normalizeList(r.data)),
     enabled: loadKey !== null,
-    onError: (err) => showToast(errMsg(err, "Failed to load roster"), true),
   });
 
-  // Save new row or update existing row using the same endpoint
   const saveMutation = useMutation({
-    mutationFn: (payload) => api.post("/roster/save", payload),
-    onSuccess: (_, payload) => {
-      showToast(payload.id ? "Roster updated." : "Roster saved.");
+    mutationFn: ({ recordId, body }) => {
+      if (recordId) {
+        return api.put(`/roster/${encodeURIComponent(recordId)}`, body);
+      }
 
-      // Keep selected staff, clear only the editable roster fields
+      return api.post("/roster", body);
+    },
+    onSuccess: (_, variables) => {
+      showToast(variables.recordId ? "Roster updated." : "Roster saved.");
+
+      const savedWeekRange = getWeekRange(variables.selectedDate);
+
+      setFilters((f) => ({
+        ...f,
+        weekDate: variables.selectedDate,
+      }));
+
+      setLoadKey({
+        staffId: String(variables.selectedStaffId),
+        from: savedWeekRange.from,
+        to: savedWeekRange.to,
+      });
+
       setForm((f) => ({
         ...f,
         id: "",
         date: "",
-        start_time: "",
-        end_time: "",
+        startTime: "",
+        endTime: "",
+        status: "SCHEDULED",
       }));
 
       qc.invalidateQueries({ queryKey: ["roster"] });
     },
-    onError: (err) => showToast(errMsg(err, "Failed to save roster"), true),
+    onError: (err) =>
+      showToast(getApiErrorMessage(err, "Failed to save roster"), true),
   });
 
-  // Put the chosen staff member into both filter state and form state
   const pickStaff = (staff) => {
     setSelectedStaff(staff);
     setStaffResults([]);
 
     setFilters((f) => ({
       ...f,
-      staff_id: String(staff.staff_id),
-      staff_name: staff.staff_name,
+      staffId: String(staff.staffId),
+      staffName: staff.staffName,
     }));
 
     setForm({
       id: "",
-      staff_id: String(staff.staff_id),
-      staff_name: staff.staff_name,
+      staffId: String(staff.staffId),
+      staffName: staff.staffName,
       date: "",
-      start_time: "",
-      end_time: "",
+      startTime: "",
+      endTime: "",
+      status: "SCHEDULED",
     });
   };
 
-  // Find one staff member from direct staff ID
   const handleFindById = async () => {
-    if (!filters.staff_id.trim()) {
+    if (!filters.staffId.trim()) {
       showToast("Enter a Staff ID first.", true);
       return;
     }
 
     try {
       const res = await api.get(
-        `/staff/name-id?id=${encodeURIComponent(filters.staff_id)}`,
+        `/staff/${encodeURIComponent(filters.staffId)}/name`,
       );
 
       const staff = {
-        staff_id: String(res.data.first ?? ""),
-        staff_name: res.data.second ?? "",
+        staffId: String(res.data.id ?? ""),
+        staffName: res.data.name ?? "",
       };
 
-      if (!staff.staff_id || !staff.staff_name) {
+      if (!staff.staffId || !staff.staffName) {
         showToast("No staff found.", true);
         return;
       }
@@ -175,25 +220,24 @@ export default function RosterTab({ showToast }) {
       pickStaff(staff);
       showToast("Staff selected.");
     } catch (err) {
-      showToast(errMsg(err, "Failed to search staff"), true);
+      showToast(getApiErrorMessage(err, "Failed to search staff"), true);
     }
   };
 
-  // Search staff by name keyword
   const handleFindByName = async () => {
-    if (!filters.staff_name.trim()) {
+    if (!filters.staffName.trim()) {
       showToast("Enter a staff name keyword first.", true);
       return;
     }
 
     try {
       const res = await api.get(
-        `/staff/name-map?keyword=${encodeURIComponent(filters.staff_name)}`,
+        `/staff/search?name=${encodeURIComponent(filters.staffName)}`,
       );
 
-      const rows = Object.entries(res.data || {}).map(([staff_id, staff_name]) => ({
-        staff_id,
-        staff_name,
+      const rows = Object.entries(res.data || {}).map(([staffId, staffName]) => ({
+        staffId,
+        staffName,
       }));
 
       setStaffResults(rows);
@@ -210,11 +254,10 @@ export default function RosterTab({ showToast }) {
         showToast("Multiple staff found. Pick the correct one below.");
       }
     } catch (err) {
-      showToast(errMsg(err, "Failed to search staff"), true);
+      showToast(getApiErrorMessage(err, "Failed to search staff"), true);
     }
   };
 
-  // Load roster for the selected staff member and selected week
   const handleLoad = () => {
     if (!selectedStaff) {
       showToast("Select a staff member first.", true);
@@ -227,33 +270,33 @@ export default function RosterTab({ showToast }) {
     }
 
     setLoadKey({
-      staff_id: selectedStaff.staff_id,
+      staffId: selectedStaff.staffId,
       from: weekRange.from,
       to: weekRange.to,
     });
   };
 
-  // Load one existing row back into the form for editing
   const handleEdit = (row) => {
     setSelectedStaff({
-      staff_id: row.staff_id,
-      staff_name: row.staff_name,
+      staffId: row.staffId,
+      staffName: row.staffName,
     });
 
     setFilters((f) => ({
       ...f,
-      staff_id: String(row.staff_id),
-      staff_name: row.staff_name,
+      staffId: String(row.staffId),
+      staffName: row.staffName,
       weekDate: row.date,
     }));
 
     setForm({
       id: row.id,
-      staff_id: String(row.staff_id),
-      staff_name: row.staff_name,
+      staffId: String(row.staffId),
+      staffName: row.staffName,
       date: row.date,
-      start_time: row.start_time,
-      end_time: row.end_time,
+      startTime: row.startTime,
+      endTime: row.endTime,
+      status: row.status ?? "SCHEDULED",
     });
   };
 
@@ -262,20 +305,21 @@ export default function RosterTab({ showToast }) {
       ...f,
       id: "",
       date: "",
-      start_time: "",
-      end_time: "",
+      startTime: "",
+      endTime: "",
+      status: "SCHEDULED",
     }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (!form.staff_id) {
+    if (!form.staffId) {
       showToast("Select a staff member first.", true);
       return;
     }
 
-    if (!form.date || !form.start_time || !form.end_time) {
+    if (!form.date || !form.startTime || !form.endTime) {
       showToast("Fill in date, start time, and end time.", true);
       return;
     }
@@ -285,19 +329,22 @@ export default function RosterTab({ showToast }) {
       return;
     }
 
-    const payload = {
-      staff_id: Number(form.staff_id),
-      date: form.date,
-      start_time: form.start_time,
-      end_time: form.end_time,
-      hours: Number((totalMinutes / 60).toFixed(2)),
+    const body = {
+      staff: {
+        id: Number(form.staffId),
+      },
+      rosterDate: form.date,
+      startTime: form.startTime,
+      endTime: form.endTime,
+      status: form.status || "SCHEDULED",
     };
 
-    if (form.id) {
-      payload.id = Number(form.id);
-    }
-
-    saveMutation.mutate(payload);
+    saveMutation.mutate({
+      recordId: form.id ? Number(form.id) : null,
+      selectedDate: form.date,
+      selectedStaffId: Number(form.staffId),
+      body,
+    });
   };
 
   return (
@@ -313,12 +360,11 @@ export default function RosterTab({ showToast }) {
           component="form"
           onSubmit={handleSubmit}
         >
-          {/* Staff lookup */}
           <Field label="Find Staff by ID">
             <input
-              name="staff_id"
+              name="staffId"
               type="text"
-              value={filters.staff_id}
+              value={filters.staffId}
               onChange={setFilter}
               placeholder="Staff ID"
             />
@@ -331,9 +377,9 @@ export default function RosterTab({ showToast }) {
 
           <Field label="Search Staff by Name">
             <input
-              name="staff_name"
+              name="staffName"
               type="text"
-              value={filters.staff_name}
+              value={filters.staffName}
               onChange={setFilter}
               placeholder="Staff name keyword"
             />
@@ -352,29 +398,28 @@ export default function RosterTab({ showToast }) {
               <Box sx={{ display: "grid", gap: 1 }}>
                 {staffResults.map((staff) => (
                   <GhostButton
-                    key={staff.staff_id}
+                    key={staff.staffId}
                     type="button"
                     onClick={() => pickStaff(staff)}
                     sx={{ justifyContent: "flex-start", textTransform: "none" }}
                   >
-                    {staff.staff_name} ({staff.staff_id})
+                    {staff.staffName} ({staff.staffId})
                   </GhostButton>
                 ))}
               </Box>
             </Box>
           ) : null}
 
-          {/* Roster form */}
           <Field label="Staff ID">
-            <input name="staff_id" type="text" readOnly value={form.staff_id} />
+            <input name="staffId" type="text" readOnly value={form.staffId} />
           </Field>
 
           <Field label="Staff Name">
             <input
-              name="staff_name"
+              name="staffName"
               type="text"
               readOnly
-              value={form.staff_name}
+              value={form.staffName}
             />
           </Field>
 
@@ -390,20 +435,20 @@ export default function RosterTab({ showToast }) {
 
           <Field label="Start Time">
             <input
-              name="start_time"
+              name="startTime"
               type="time"
               required
-              value={form.start_time}
+              value={form.startTime}
               onChange={set}
             />
           </Field>
 
           <Field label="End Time">
             <input
-              name="end_time"
+              name="endTime"
               type="time"
               required
-              value={form.end_time}
+              value={form.endTime}
               onChange={set}
             />
           </Field>
@@ -428,10 +473,9 @@ export default function RosterTab({ showToast }) {
         </PanelCard>
 
         <PanelCard title="Roster Overview">
-          {/* Week filter */}
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
             {selectedStaff
-              ? `Selected staff: ${selectedStaff.staff_name} (${selectedStaff.staff_id})`
+              ? `Selected staff: ${selectedStaff.staffName} (${selectedStaff.staffId})`
               : "Select a staff member first."}
           </Typography>
 
@@ -453,7 +497,6 @@ export default function RosterTab({ showToast }) {
             </PrimaryButton>
           </InlineFields>
 
-          {/* Weekly roster list */}
           {rosterRows.length === 0 ? (
             <Box
               sx={{
@@ -507,9 +550,9 @@ export default function RosterTab({ showToast }) {
                   }}
                 >
                   <Box>{row.date}</Box>
-                  <Box>{row.staff_name}</Box>
-                  <Box>{row.start_time}</Box>
-                  <Box>{row.end_time}</Box>
+                  <Box>{row.staffName}</Box>
+                  <Box>{row.startTime}</Box>
+                  <Box>{row.endTime}</Box>
                   <Box>{formatHours(row.hours)}</Box>
                   <Box>
                     <PrimaryButton
