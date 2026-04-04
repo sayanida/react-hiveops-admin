@@ -49,10 +49,10 @@
   ],
   "settings": {
     "overtime-rules": {
-      "dailyOvertimeHours": 10,
+      "dailyOvertimeHours": 8,
       "weeklyOvertimeHours": 38,
       "penalty": {
-        "weekend": 0,
+        "weekend": 1,
         "publicHoliday": 1
       },
       "updatedAt": "2026-04-04T09:34:10.720Z"
