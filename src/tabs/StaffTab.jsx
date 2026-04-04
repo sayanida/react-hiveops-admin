@@ -29,6 +29,9 @@ const initialForm = {
   role: "",
   standardRate: "",
   overtimeRate: "",
+  hoursType: "WEEKLY", // "WEEKLY" | "PATTERNED"
+  weeklyHours: "",
+  schedulePattern: "",
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -71,6 +74,25 @@ const CONTRACT_TO_FORM = {
   "Part Time": "PART_TIME",
 };
 
+function normalizeStaffRowForTable(row) {
+  return {
+    id: row.id ?? row.staffId ?? "",
+    name: row.name ?? "",
+    birthday: row.birthday ?? "",
+    sex: row.sex ?? "",
+    mobilePhone: row.mobilePhone ?? row.mobile_phone ?? "",
+    email: row.email ?? "",
+    address: row.address ?? "",
+    postCode: row.postCode ?? row.post_code ?? "",
+    contractType: row.contractType ?? row.contract_type ?? "",
+    role: row.role ?? "",
+    standardRate: row.standardRate ?? row.standard_rate ?? "",
+    overtimeRate: row.overtimeRate ?? row.overtime_rate ?? "",
+    weeklyHours: row.weeklyHours ?? row.weekly_hours ?? null,
+    schedulePattern: row.schedulePattern ?? row.schedule_pattern ?? null,
+  };
+}
+
 function validateStaffForm(values) {
   if (!values.name.trim()) return "Name is required.";
   if (!values.contractType) return "Please select a contract type.";
@@ -111,6 +133,24 @@ function validateStaffForm(values) {
     }
   }
 
+  const hasWeekly = values.weeklyHours !== "";
+  const hasPattern = values.schedulePattern.trim() !== "";
+
+  if (hasWeekly && hasPattern) {
+    return "Provide either weekly hours or schedule pattern, not both.";
+  }
+
+  if (!hasWeekly && !hasPattern) {
+    return "Either weekly hours or schedule pattern is required.";
+  }
+
+  if (hasWeekly) {
+    const weeklyHours = Number(values.weeklyHours);
+    if (!Number.isFinite(weeklyHours) || weeklyHours <= 0) {
+      return "Weekly hours must be greater than 0.";
+    }
+  }
+
   return "";
 }
 
@@ -132,13 +172,40 @@ export default function StaffTab({ showToast }) {
         .get(
           `/staff${searchKey ? `?search=${encodeURIComponent(searchKey)}` : ""}`,
         )
-        .then((r) => normalizeList(r.data)),
+        .then((r) =>
+          normalizeList(r.data).map((row) => normalizeStaffRowForTable(row)),
+        ),
     enabled: searchKey !== null,
   });
 
   // ── Save mutation
   const saveMutation = useMutation({
-    mutationFn: (payload) => api.post("/staff/save", payload),
+    mutationFn: async (payload) => {
+      const id = payload.id;
+
+      if (!id) {
+        return api.post("/staff/save", payload);
+      }
+
+      try {
+        // Keep compatibility with backend save endpoint.
+        return await api.post("/staff/save", payload);
+      } catch (err) {
+        const status = err?.response?.status;
+        const raw = err?.response?.data;
+        const detail =
+          typeof raw === "string"
+            ? raw
+            : JSON.stringify(raw || {}) + (err?.message || "");
+
+        // json-server rewrite handles POST as insert only. - FE Mock test only!!
+        if (status === 500 && /duplicate id|insert failed/i.test(detail)) {
+          return api.put(`/staff/${id}`, payload);
+        }
+
+        throw err;
+      }
+    },
     onSuccess: () => {
       showToast(editingId ? "Staff updated." : "Staff saved.");
       setForm(initialForm);
@@ -150,6 +217,10 @@ export default function StaffTab({ showToast }) {
 
   const startEdit = (row) => {
     const rowId = row.id ?? row.staffId ?? "";
+    const rowWeeklyHours = row.weeklyHours ?? row.weekly_hours;
+    const rowSchedulePattern =
+      row.schedulePattern ?? row.schedule_pattern ?? "";
+    const rowHoursType = rowSchedulePattern ? "PATTERNED" : "WEEKLY";
     setEditingId(rowId || null);
     setForm({
       id: String(rowId || ""),
@@ -165,6 +236,13 @@ export default function StaffTab({ showToast }) {
       role: row.role ?? "",
       standardRate: String(row.standardRate ?? row.standard_rate ?? ""),
       overtimeRate: String(row.overtimeRate ?? row.overtime_rate ?? ""),
+      hoursType: rowHoursType,
+      weeklyHours:
+        rowHoursType === "WEEKLY" && rowWeeklyHours != null
+          ? String(rowWeeklyHours)
+          : "",
+      schedulePattern:
+        rowHoursType === "PATTERNED" ? String(rowSchedulePattern) : "",
     });
   };
 
@@ -193,6 +271,10 @@ export default function StaffTab({ showToast }) {
     const email = form.email.trim();
     const address = form.address.trim();
     const postCode = form.postCode.trim();
+    const weeklyHours = form.weeklyHours.trim();
+    const schedulePattern = form.schedulePattern.trim();
+    const hasWeekly = weeklyHours !== "";
+    const hasPattern = schedulePattern !== "";
 
     const payload = {
       ...(trimmedId ? { id: Number(trimmedId) } : {}),
@@ -207,6 +289,9 @@ export default function StaffTab({ showToast }) {
       ...(email ? { email } : {}),
       ...(address ? { address } : {}),
       ...(postCode ? { postCode } : {}),
+      ...(hasWeekly
+        ? { weeklyHours: Number(weeklyHours), schedulePattern: null }
+        : { weeklyHours: null, schedulePattern }),
     };
 
     saveMutation.mutate(payload);
@@ -343,6 +428,52 @@ export default function StaffTab({ showToast }) {
               fullWidth
             />
           </Field>
+
+          {/* ───── Standard Working Hours ───── */}
+          <Field label="Standard Working Hours">
+            {/* Radio: Weekly / Patterned */}
+            <TextField
+              select
+              name="hoursType"
+              value={form.hoursType}
+              onChange={set}
+              size="small"
+              fullWidth
+            >
+              <MenuItem value="WEEKLY">Weekly total hours</MenuItem>
+              <MenuItem value="PATTERNED">Patterned schedule</MenuItem>
+            </TextField>
+
+            {/* Conditional input */}
+            {form.hoursType === "WEEKLY" && (
+              <TextField
+                sx={{ mt: 1 }}
+                name="weeklyHours"
+                type="number"
+                label="Hours per week"
+                value={form.weeklyHours}
+                onChange={set}
+                size="small"
+                fullWidth
+                inputProps={{ min: 0 }}
+                helperText="e.g. 38"
+              />
+            )}
+
+            {form.hoursType === "PATTERNED" && (
+              <TextField
+                sx={{ mt: 1 }}
+                name="schedulePattern"
+                label="Schedule pattern"
+                value={form.schedulePattern}
+                onChange={set}
+                size="small"
+                fullWidth
+                helperText="e.g. Mon–Fri 9–5"
+              />
+            )}
+          </Field>
+
           <Field label="Standard Rate">
             <TextField
               name="standardRate"
