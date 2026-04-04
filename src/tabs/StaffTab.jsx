@@ -126,12 +126,12 @@ function validateStaffForm(values) {
     }
   }
 
-  for (const key of ["standardRate", "overtimeRate"]) {
-    const num = Number(values[key]);
-    if (Number.isNaN(num) || num < 0) {
-      return "Hourly rate must be a number greater than or equal to 0.";
-    }
-  }
+  // for (const key of ["standardRate", "overtimeRate"]) {
+  //   const num = Number(values[key]);
+  //   if (Number.isNaN(num) || num < 0) {
+  //     return "Hourly rate must be a number greater than or equal to 0.";
+  //   }
+  // }
 
   const hasWeekly = values.weeklyHours !== "";
   const hasPattern = values.schedulePattern.trim() !== "";

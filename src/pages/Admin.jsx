@@ -24,7 +24,6 @@ import RegistrationsTab from "../tabs/RegistrationsTab.jsx";
 import ReportsTab from "../tabs/ReportsTab.jsx";
 import PayslipsTab from "../tabs/PayslipsTab.jsx";
 import ExceptionsTab from "../tabs/ExceptionsTab.jsx";
-import SettingsTab from "../tabs/SettingsTab.jsx";
 
 export { api };
 
@@ -49,7 +48,6 @@ const TABS = [
   { id: "reports", label: "Reports", Component: ReportsTab },
   { id: "payslips", label: "Pay Slips", Component: PayslipsTab },
   { id: "exceptions", label: "Exception Reports", Component: ExceptionsTab },
-  { id: "settings", label: "Settings", Component: SettingsTab },
 ];
 
 // ─── Root App ─────────────────────────────────────────────────────────────────
