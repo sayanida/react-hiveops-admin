@@ -105,36 +105,76 @@ export default function RosterTab({ showToast }) {
     status: "SCHEDULED",
   });
 
-  const [filters, setFilters] = useState({
-    staffId: "",
-    staffName: "",
+  // Left panel: one search box for selecting a staff member to create/update roster
+  const [entrySearch, setEntrySearch] = useState("");
+
+  // Right panel: independent filters for viewing roster list
+  const [listFilters, setListFilters] = useState({
+    query: "",      // optional name or ID filter; empty means "All"
     weekDate: "",
   });
 
   const [staffResults, setStaffResults] = useState([]);
   const [selectedStaff, setSelectedStaff] = useState(null);
-  const [loadKey, setLoadKey] = useState(null);
 
+  // Right panel load key: used only for loading the roster list by date range
+  const [listLoadKey, setListLoadKey] = useState(null);
+
+  // Left form fields for create/update
   const set = (e) =>
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
-  const setFilter = (e) =>
-    setFilters((f) => ({ ...f, [e.target.name]: e.target.value }));
+  // Right panel filter handler
+  const setListFilter = (e) =>
+    setListFilters((f) => ({ ...f, [e.target.name]: e.target.value }));
 
-  const weekRange = getWeekRange(filters.weekDate);
+  const weekRange = getWeekRange(listFilters.weekDate);
   const totalMinutes = getTotalMinutes(form.startTime, form.endTime);
   const totalLabel = formatMinutes(totalMinutes);
 
+  // Right panel: load roster list by date range, optionally filtered by name or ID
   const { data: rosterRows = [], isFetching } = useQuery({
-    queryKey: ["roster", loadKey],
-    queryFn: () =>
-      api
-        .get(
-          `/roster?staffId=${encodeURIComponent(loadKey.staffId)}&from=${encodeURIComponent(loadKey.from)}&to=${encodeURIComponent(loadKey.to)}`,
-        )
-        .then((r) => normalizeList(r.data)),
-    enabled: loadKey !== null,
+    queryKey: ["roster-list", listLoadKey],
+    queryFn: () => {
+      let url =
+        `/roster/list?from=${encodeURIComponent(listLoadKey.from)}` +
+        `&to=${encodeURIComponent(listLoadKey.to)}`;
+
+      // Optional query filter: if empty, backend should return all rostered staff
+      if (listLoadKey.query) {
+        url += `&query=${encodeURIComponent(listLoadKey.query)}`;
+      }
+
+      return api.get(url).then((r) => normalizeList(r.data));
+    },
+    enabled: listLoadKey !== null,
   });
+
+  // mock test
+  /*const { data: rosterRows = [], isFetching } = useQuery({
+    queryKey: ["roster-list", listLoadKey],
+    queryFn: async () => {
+      let url =
+        `http://localhost:3001/roster/list?from=${encodeURIComponent(listLoadKey.from)}` +
+        `&to=${encodeURIComponent(listLoadKey.to)}`;
+
+      // Optional query filter: if empty, mock server returns all rostered staff
+      if (listLoadKey.query) {
+        url += `&query=${encodeURIComponent(listLoadKey.query)}`;
+      }
+
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`Mock roster list request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return normalizeList(data);
+    },
+    enabled: listLoadKey !== null,
+  });*/
+
 
   const saveMutation = useMutation({
     mutationFn: ({ recordId, body }) => {
@@ -147,19 +187,6 @@ export default function RosterTab({ showToast }) {
     onSuccess: (_, variables) => {
       showToast(variables.recordId ? "Roster updated." : "Roster saved.");
 
-      const savedWeekRange = getWeekRange(variables.selectedDate);
-
-      setFilters((f) => ({
-        ...f,
-        weekDate: variables.selectedDate,
-      }));
-
-      setLoadKey({
-        staffId: String(variables.selectedStaffId),
-        from: savedWeekRange.from,
-        to: savedWeekRange.to,
-      });
-
       setForm((f) => ({
         ...f,
         id: "",
@@ -169,21 +196,20 @@ export default function RosterTab({ showToast }) {
         status: "SCHEDULED",
       }));
 
-      qc.invalidateQueries({ queryKey: ["roster"] });
+      // Refresh the right panel list if it is currently being viewed
+      qc.invalidateQueries({ queryKey: ["roster-list"] });
     },
     onError: (err) =>
       showToast(getApiErrorMessage(err, "Failed to save roster"), true),
   });
 
+  // Put the chosen staff member into the left create/update form only
   const pickStaff = (staff) => {
     setSelectedStaff(staff);
     setStaffResults([]);
 
-    setFilters((f) => ({
-      ...f,
-      staffId: String(staff.staffId),
-      staffName: staff.staffName,
-    }));
+    // Optional: show the selected staff back in the search box
+    setEntrySearch(`${staff.staffName} (${staff.staffId})`);
 
     setForm({
       id: "",
@@ -196,43 +222,45 @@ export default function RosterTab({ showToast }) {
     });
   };
 
-  const handleFindById = async () => {
-    if (!filters.staffId.trim()) {
-      showToast("Enter a Staff ID first.", true);
+  // Helper: if the input is only digits, treat it as a staff ID search
+  function isNumericSearch(value) {
+    return /^\d+$/.test(value.trim());
+  }
+
+  // Left panel staff lookup: one box that supports ID or name
+  const handleFindStaff = async () => {
+    const searchValue = entrySearch.trim();
+
+    if (!searchValue) {
+      showToast("Enter a staff name or ID first.", true);
       return;
     }
 
     try {
-      const res = await api.get(
-        `/staff/${encodeURIComponent(filters.staffId)}/name`,
-      );
+      if (isNumericSearch(searchValue)) {
+        // Search by exact staff ID
+        const res = await api.get(
+          `/staff/${encodeURIComponent(searchValue)}/name`
+        );
 
-      const staff = {
-        staffId: String(res.data.id ?? ""),
-        staffName: res.data.name ?? "",
-      };
+        const staff = {
+          staffId: String(res.data.id ?? ""),
+          staffName: res.data.name ?? "",
+        };
 
-      if (!staff.staffId || !staff.staffName) {
-        showToast("No staff found.", true);
+        if (!staff.staffId || !staff.staffName) {
+          showToast("No staff found.", true);
+          return;
+        }
+
+        pickStaff(staff);
+        showToast("Staff selected.");
         return;
       }
 
-      pickStaff(staff);
-      showToast("Staff selected.");
-    } catch (err) {
-      showToast(getApiErrorMessage(err, "Failed to search staff"), true);
-    }
-  };
-
-  const handleFindByName = async () => {
-    if (!filters.staffName.trim()) {
-      showToast("Enter a staff name keyword first.", true);
-      return;
-    }
-
-    try {
+      // Search by name keyword
       const res = await api.get(
-        `/staff/search?name=${encodeURIComponent(filters.staffName)}`,
+        `/staff/search?name=${encodeURIComponent(searchValue)}`
       );
 
       const rows = Object.entries(res.data || {}).map(([staffId, staffName]) => ({
@@ -258,36 +286,28 @@ export default function RosterTab({ showToast }) {
     }
   };
 
+  // Right panel load: date range is required, staff filter is optional
   const handleLoad = () => {
-    if (!selectedStaff) {
-      showToast("Select a staff member first.", true);
-      return;
-    }
-
-    if (!filters.weekDate) {
+    if (!listFilters.weekDate) {
       showToast("Pick a date first.", true);
       return;
     }
 
-    setLoadKey({
-      staffId: selectedStaff.staffId,
+    setListLoadKey({
       from: weekRange.from,
       to: weekRange.to,
+      query: listFilters.query.trim(), // empty = All staff
     });
   };
 
+  // Clicking Edit on the right list fills the left create/update form
   const handleEdit = (row) => {
     setSelectedStaff({
       staffId: row.staffId,
       staffName: row.staffName,
     });
 
-    setFilters((f) => ({
-      ...f,
-      staffId: String(row.staffId),
-      staffName: row.staffName,
-      weekDate: row.date,
-    }));
+    setEntrySearch(`${row.staffName} (${row.staffId})`);
 
     setForm({
       id: row.id,
@@ -360,33 +380,19 @@ export default function RosterTab({ showToast }) {
           component="form"
           onSubmit={handleSubmit}
         >
-          <Field label="Find Staff by ID">
+          {/* Left panel staff lookup for create/update only */}
+          <Field label="Search Staff by Name or ID">
             <input
-              name="staffId"
               type="text"
-              value={filters.staffId}
-              onChange={setFilter}
-              placeholder="Staff ID"
+              value={entrySearch}
+              onChange={(e) => setEntrySearch(e.target.value)}
+              placeholder="Search by name or ID"
             />
           </Field>
-          <FormActions>
-            <PrimaryButton type="button" onClick={handleFindById}>
-              Find Staff
-            </PrimaryButton>
-          </FormActions>
 
-          <Field label="Search Staff by Name">
-            <input
-              name="staffName"
-              type="text"
-              value={filters.staffName}
-              onChange={setFilter}
-              placeholder="Staff name keyword"
-            />
-          </Field>
           <FormActions>
-            <PrimaryButton type="button" onClick={handleFindByName}>
-              Search Name
+            <PrimaryButton type="button" onClick={handleFindStaff}>
+              Find Staff
             </PrimaryButton>
           </FormActions>
 
@@ -472,26 +478,36 @@ export default function RosterTab({ showToast }) {
           </FormActions>
         </PanelCard>
 
-        <PanelCard title="Roster Overview">
+        <PanelCard title="Rostering List">
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-            {selectedStaff
-              ? `Selected staff: ${selectedStaff.staffName} (${selectedStaff.staffId})`
-              : "Select a staff member first."}
+            Select a date to view all staff rostered in this 7-day window.
+            You can optionally filter by staff name or ID, or leave it blank to show all.
           </Typography>
+
+          {/* Optional filter for the roster list only */}
+          <Field label="Optional Staff Filter">
+            <input
+              name="query"
+              type="text"
+              value={listFilters.query}
+              onChange={setListFilter}
+              placeholder="Leave blank for All, or enter name / ID"
+            />
+          </Field>
 
           <InlineFields>
             <input
               name="weekDate"
               type="date"
-              value={filters.weekDate}
-              onChange={setFilter}
+              value={listFilters.weekDate}
+              onChange={setListFilter}
             />
             <input type="text" readOnly value={weekRange.from} placeholder="From" />
             <input type="text" readOnly value={weekRange.to} placeholder="To" />
             <PrimaryButton
               type="button"
               onClick={handleLoad}
-              disabled={!selectedStaff || !filters.weekDate || isFetching}
+              disabled={!listFilters.weekDate || isFetching}
             >
               {isFetching ? "Loading..." : "Load"}
             </PrimaryButton>
