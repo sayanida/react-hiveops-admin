@@ -66,7 +66,25 @@ export default function StationsTab({ showToast }) {
     queryFn: () => api.get("/stations").then((r) => normalizeList(r.data)),  
   });
 
-  const displayRows = stationRows.map(({ id, ...rest }) => rest);
+  const formatType = (type) => {
+  switch (type) {
+    case "CARD":
+      return "Card";
+    case "FACE":
+      return "Face";
+    case "FINGERPRINT":
+      return "Fingerprint";
+    case "RETINAL_SCAN":
+      return "Retinal Scan";
+    default:
+      return type;
+    }
+  };
+
+  const displayRows = stationRows.map(({ id, ...rest }) => ({
+    ...rest,
+    type: formatType(rest.type),
+  }));
 
   const saveMutation = useMutation({
     mutationFn: (payload) => api.post("/stations", payload),
@@ -146,10 +164,10 @@ export default function StationsTab({ showToast }) {
           <Field label="Type">
             <select name="type" value={form.type} onChange={set}>
               <option value="">Select</option>
-              <option>Card</option>
-              <option>Face</option>
-              <option>Fingerprint</option>
-              <option>Retinal Scan</option>
+              <option value="CARD">Card</option>
+              <option value="FACE">Face</option>
+              <option value="FINGERPRINT">Fingerprint</option>
+              <option value="RETINAL_SCAN">Retinal Scan</option>
             </select>
             {errors.type ? (
               <FormHelperText error>{errors.type}</FormHelperText>
