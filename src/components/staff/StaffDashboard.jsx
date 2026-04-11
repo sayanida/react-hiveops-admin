@@ -13,6 +13,7 @@ import {
 } from "@mui/material";
 import { PanelCard, PrimaryButton, GhostButton } from "../../tabs/shared.jsx";
 
+// ─── Mock kiosk / worker data ────────────────────────────────────────────────
 const STATION_NAME = "North Shed";
 const DEVICE_ID = "DEVICE-001";
 
@@ -28,6 +29,16 @@ const MOCK_WORKER = {
   name: "Frodo Baggins",
   role: "Worker",
   initials: "FB",
+};
+
+// ─── Task 119 mock roster state ──────────────────────────────────────────────
+// Toggle HAS_SHIFT to quickly test both wireframe states while building.
+const HAS_SHIFT = true;
+
+const MOCK_TODAY_ROSTER = {
+  date: "4 Apr 2026",
+  startTime: "07:00 AM",
+  duration: "8 hrs",
 };
 
 function KioskActionButton({ children, sx = {}, ...props }) {
@@ -172,12 +183,84 @@ function IdleState({ selectedMethod, setSelectedMethod, onIdentify }) {
   );
 }
 
+// ─── Small roster info card - Righ Panel ─────────────────────
+function RosterInfoCard({ label, value }) {
+  return (
+    <Box
+      sx={{
+        p: 2,
+        borderRadius: 1.5,
+        backgroundColor: "#f3efe9",
+        border: "1px solid",
+        borderColor: "divider",
+      }}
+    >
+      <Typography variant="caption" color="text.secondary">
+        {label}
+      </Typography>
+
+      <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.5 }}>
+        {value}
+      </Typography>
+    </Box>
+  );
+}
+
+// ─── Roster content ─────────────────────────────────────
+function TodayRosterPanel({ hasShift, roster }) {
+  return (
+    <Box>
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
+        My Roster Today
+      </Typography>
+
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
+        Your confirmed shift for today.
+      </Typography>
+
+      {hasShift ? (
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" },
+            gap: 2,
+          }}
+        >
+          <RosterInfoCard label="Date" value={roster.date} />
+          <RosterInfoCard label="Start Time" value={roster.startTime} />
+          <RosterInfoCard label="Duration" value={roster.duration} />
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            p: 2,
+            borderRadius: 1.5,
+            backgroundColor: "#eef0f3",
+            border: "1px solid",
+            borderColor: "#c8cdd4",
+          }}
+        >
+          <Typography variant="body1" sx={{ mb: 0.5 }}>
+            No shift scheduled for today.
+          </Typography>
+
+          <Typography variant="body2" color="text.secondary">
+            Contact your supervisor if you believe this is an error.
+          </Typography>
+        </Box>
+      )}
+    </Box>
+  );
+}
+
 function IdentifiedState({
   selectedReason,
   setSelectedReason,
   activePanel,
   onAction,
   onEndSession,
+  hasShift,
+  roster,
 }) {
   return (
     <Box
@@ -363,14 +446,7 @@ function IdentifiedState({
             </Box>
           </Box>
         ) : activePanel === "roster" ? (
-          <Box>
-            <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
-              My Roster Today
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Roster details will be added here in Task 119.
-            </Typography>
-          </Box>
+          <TodayRosterPanel hasShift={hasShift} roster={roster} />
         ) : activePanel === "supervisor-override" ? (
           <Box>
             <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
@@ -436,6 +512,8 @@ export default function StaffDashboard({ showToast }) {
           activePanel={activePanel}
           onAction={handleAction}
           onEndSession={handleEndSession}
+          hasShift={HAS_SHIFT}
+          roster={MOCK_TODAY_ROSTER}
         />
       )}
     </Box>
