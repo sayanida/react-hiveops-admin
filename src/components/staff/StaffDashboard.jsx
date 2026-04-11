@@ -1,8 +1,13 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+  Alert,
   Avatar,
   Box,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
   FormControl,
   InputLabel,
@@ -12,7 +17,9 @@ import {
   Typography,
 } from "@mui/material";
 import { PanelCard, PrimaryButton, GhostButton } from "../../tabs/shared.jsx";
+import frodoProfile from "../../assets/frodo-baggins.jpg";
 
+// ─── Mock kiosk / worker data ────────────────────────────────────────────────
 const STATION_NAME = "North Shed";
 const DEVICE_ID = "DEVICE-001";
 
@@ -398,16 +405,138 @@ function IdentifiedState({
   );
 }
 
+// ─── Task 123 Face ID PoC dialog ─────────────────────────────────────────────
+// Uses the real webcam for capture, then shows a mock match result with Frodo.
+function FaceIdPocDialog({
+  open,
+  onClose,
+  onContinue,
+  videoRef,
+  cameraError,
+  capturedPhoto,
+  onCapture,
+}) {
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
+      <DialogTitle>Face ID PoC Capture</DialogTitle>
+
+      <DialogContent dividers>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          This proof of concept uses the webcam for capture and then shows a
+          mock matched profile result.
+        </Typography>
+
+        {!capturedPhoto ? (
+          <Box>
+            {cameraError ? (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {cameraError}
+              </Alert>
+            ) : null}
+
+            <Box
+              sx={{
+                borderRadius: 2,
+                overflow: "hidden",
+                backgroundColor: "#111",
+                minHeight: 340,
+                display: "grid",
+                placeItems: "center",
+              }}
+            >
+              <Box
+                component="video"
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                sx={{
+                  width: "100%",
+                  maxHeight: 420,
+                  objectFit: "cover",
+                }}
+              />
+            </Box>
+          </Box>
+        ) : (
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+              gap: 2,
+            }}
+          >
+            <PanelCard title="Captured Image">
+              <Box
+                component="img"
+                src={capturedPhoto}
+                alt="Captured webcam frame"
+                sx={{
+                  width: "100%",
+                  borderRadius: 1.5,
+                  objectFit: "cover",
+                }}
+              />
+            </PanelCard>
+
+            <PanelCard title="Mock Matched Profile">
+              <Box
+                component="img"
+                src={frodoProfile}
+                alt="Matched worker profile"
+                sx={{
+                  width: "100%",
+                  borderRadius: 1.5,
+                  objectFit: "cover",
+                }}
+              />
+
+              <Alert severity="success" sx={{ mt: 2 }}>
+                PoC mock face match successful. Identified as {MOCK_WORKER.name}.
+              </Alert>
+            </PanelCard>
+          </Box>
+        )}
+      </DialogContent>
+
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <GhostButton onClick={onClose}>Cancel</GhostButton>
+
+        {!capturedPhoto ? (
+          <PrimaryButton onClick={onCapture} disabled={Boolean(cameraError)}>
+            Capture
+          </PrimaryButton>
+        ) : (
+          <PrimaryButton onClick={onContinue}>Continue to Kiosk</PrimaryButton>
+        )}
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 export default function StaffDashboard({ showToast }) {
   const [screen, setScreen] = useState("idle");
   const [selectedMethod, setSelectedMethod] = useState("face");
   const [selectedReason, setSelectedReason] = useState("");
   const [activePanel, setActivePanel] = useState("");
 
+    // ─── Task 123 webcam PoC state ─────────────────────────────────────────────
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraError, setCameraError] = useState("");
+  const [capturedPhoto, setCapturedPhoto] = useState("");
+
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+
   const handleIdentify = () => {
-    setScreen("identified");
-    setActivePanel("");
-    showToast?.("Mock identification successful.");
+    if (selectedMethod !== "face") {
+      showToast?.("Mock identification successful, for Face ID only.", true);
+      return;
+    }
+
+    setCameraError("");
+    setCapturedPhoto("");
+    setCameraOpen(true);
   };
 
   const handleEndSession = () => {
@@ -420,6 +549,89 @@ export default function StaffDashboard({ showToast }) {
   const handleAction = (panel) => {
     setActivePanel(panel);
   };
+
+    // ─── Webcam helpers ────────────────────────────────────────────────────────
+  function stopCamera() {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  }
+
+  useEffect(() => {
+    if (!cameraOpen || capturedPhoto) return;
+
+    let active = true;
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false,
+        });
+
+        if (!active) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
+        streamRef.current = stream;
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
+
+        setCameraError("");
+      } catch (err) {
+        setCameraError("Unable to access webcam. Please allow camera access.");
+        showToast?.("Unable to access webcam.", true);
+      }
+    }
+
+    startCamera();
+
+    return () => {
+      active = false;
+      stopCamera();
+    };
+  }, [cameraOpen, capturedPhoto, showToast]);
+
+  function handleCloseCameraDialog() {
+    stopCamera();
+    setCameraOpen(false);
+    setCameraError("");
+    setCapturedPhoto("");
+  }
+
+  function handleCapturePhoto() {
+    if (!videoRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = document.createElement("canvas");
+
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+
+    const context = canvas.getContext("2d");
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const photoData = canvas.toDataURL("image/png");
+
+    setCapturedPhoto(photoData);
+    stopCamera();
+  }
+
+  function handleContinueToKiosk() {
+    setCameraOpen(false);
+    setScreen("identified");
+    setActivePanel("");
+    showToast?.("PoC mock face match successful.");
+  }
 
   return (
     <Box sx={{ position: "relative", zIndex: 1, px: { xs: 2, md: 5 }, py: 4 }}>
@@ -438,6 +650,17 @@ export default function StaffDashboard({ showToast }) {
           onEndSession={handleEndSession}
         />
       )}
+
+      {/* ─── Task 123 webcam PoC dialog ───────────────────────────────────── */}
+      <FaceIdPocDialog
+        open={cameraOpen}
+        onClose={handleCloseCameraDialog}
+        onContinue={handleContinueToKiosk}
+        videoRef={videoRef}
+        cameraError={cameraError}
+        capturedPhoto={capturedPhoto}
+        onCapture={handleCapturePhoto}
+      />
     </Box>
   );
 }
