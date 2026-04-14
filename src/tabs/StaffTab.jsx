@@ -223,23 +223,7 @@ function validateStaffForm(values) {
     }
   }
 
-  const hasWeekly = values.weeklyHours !== "";
-  const hasPattern = values.schedulePattern.trim() !== "";
-
-  if (hasWeekly && hasPattern) {
-    return "Provide either weekly hours or schedule pattern, not both.";
-  }
-
-  if (!hasWeekly && !hasPattern) {
-    return "Either weekly hours or schedule pattern is required.";
-  }
-
-  if (hasWeekly) {
-    const weeklyHours = Number(values.weeklyHours);
-    if (!Number.isFinite(weeklyHours) || weeklyHours <= 0) {
-      return "Weekly hours must be greater than 0.";
-    }
-  }
+  // Temporarily disabled: weekly/patterned standard-hours validation.
 
   return "";
 }
@@ -426,9 +410,6 @@ export default function StaffTab({ showToast }) {
     const address = form.address.trim();
     const postCode = form.postCode.trim();
 
-    const hasWeekly = weeklyHours !== "";
-    const hasPattern = schedulePattern !== "";
-
     const payload = {
       ...(trimmedId ? { id: Number(trimmedId) } : {}),
       name,
@@ -442,9 +423,8 @@ export default function StaffTab({ showToast }) {
       ...(email ? { email } : {}),
       ...(address ? { address } : {}),
       ...(postCode ? { postCode } : {}),
-      ...(hasWeekly
-        ? { weeklyHours: Number(weeklyHours), schedulePattern: null }
-        : { weeklyHours: null, schedulePattern }),
+      weeklyHours: null,
+      schedulePattern: null,
     };
 
     saveMutation.mutate(payload);
@@ -533,15 +513,17 @@ export default function StaffTab({ showToast }) {
                 gap: 2,
               }}
             >
-              <Field label="Staff ID">
-                <TextField
-                  name="id"
-                  value={form.id}
-                  size="small"
-                  fullWidth
-                disabled
-                />
-              </Field>
+              {editingId ? (
+                <Field label="Staff ID">
+                  <TextField
+                    name="id"
+                    value={form.id}
+                    size="small"
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                  />
+                </Field>
+              ) : null}
               <Field label="Name">
                 <TextField
                   name="name"
@@ -589,7 +571,7 @@ export default function StaffTab({ showToast }) {
                 </TextField>
               </Field>
             </Box>
-            <Box
+            {/* <Box
               sx={{
                 borderTop: "1px solid",
                 borderColor: "divider",
@@ -740,17 +722,17 @@ export default function StaffTab({ showToast }) {
                   </Table>
                 </TableContainer>
               )}
-            </Box>
+            </Box> */}
 
-            <Box
+            {/* <Box
               sx={{
                 borderTop: "1px solid",
                 borderColor: "divider",
                 mt: 2,
                 pt: 2,
               }}
-            >
-              <Typography variant="subtitle2" sx={{ mb: 0.5, fontWeight: 600 }}>
+            > */}
+            {/* <Typography variant="subtitle2" sx={{ mb: 0.5, fontWeight: 600 }}>
                 Optional Details
               </Typography>
               <Box
@@ -833,8 +815,8 @@ export default function StaffTab({ showToast }) {
                     fullWidth
                   />
                 </Field>
-              </Box>
-            </Box>
+              </Box> */}
+            {/* </Box> */}
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2 }}>
