@@ -224,7 +224,12 @@ export function PrimaryButton({ children, ...props }) {
 
 export function GhostButton({ children, ...props }) {
   return (
-    <Button variant="outlined" color="inherit" {...props}>
+    <Button
+      sx={{ textTransform: "none" }}
+      variant="outlined"
+      color="inherit"
+      {...props}
+    >
       {children}
     </Button>
   );

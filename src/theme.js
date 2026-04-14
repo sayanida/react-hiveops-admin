@@ -20,7 +20,7 @@ const theme = createTheme({
       paper: "#fffaf2 ",
     },
   },
-  shape: {},
+  shape: { borderRadius: 4 },
   typography: {
     fontFamily: `"Figtree", sans-serif`,
     fontWeightLight: 300,

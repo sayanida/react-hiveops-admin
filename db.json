@@ -12,7 +12,50 @@
       "contract_type": "Full Time",
       "role": "Supervisor",
       "standard_rate": 25.5,
-      "overtime_rate": 38.25
+      "overtime_rate": 38.25,
+      "weekly_hours": 38,
+      "schedule_pattern": "Mon-Fri 9am-5pm"
+    },
+    {
+      "id": 2,
+      "name": "Saya Yoshida",
+      "role": "Admin",
+      "contractType": "CASUAL",
+      "standardRate": 30,
+      "overtimeRate": 40,
+      "birthday": "1999-01-01",
+      "sex": "MALE",
+      "mobilePhone": "0433333333",
+      "email": "test@gmail.com",
+      "postCode": "5000",
+      "weeklyHours": null,
+      "schedulePattern": "Mon-Fri 5am-6pm"
+    },
+    {
+      "name": "test",
+      "role": "Admin",
+      "contractType": "CASUAL",
+      "standardRate": 30,
+      "overtimeRate": 40,
+      "birthday": "1888-01-01",
+      "sex": "MALE",
+      "mobilePhone": "0111111111",
+      "email": "test@gmail.com",
+      "postCode": "5000",
+      "weeklyHours": null,
+      "schedulePattern": "Mon-Fri 5am-6pm",
+      "id": 3
     }
-  ]
+  ],
+  "settings": {
+    "overtime-rules": {
+      "dailyOvertimeHours": 8,
+      "weeklyOvertimeHours": 38,
+      "penalty": {
+        "weekend": 1,
+        "publicHoliday": 1
+      },
+      "updatedAt": "2026-04-04T09:34:10.720Z"
+    }
+  }
 }
