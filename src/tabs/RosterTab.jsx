@@ -92,6 +92,33 @@ function getApiErrorMessage(err, fallback = "Request failed") {
   return fallback;
 }
 
+function EmptyStateMessage({ title, subtitle }) {
+  return (
+    <Box
+      sx={{
+        minHeight: 140,
+        display: "grid",
+        placeItems: "center",
+        textAlign: "center",
+        border: "1px solid",
+        borderColor: "divider",
+        borderRadius: 1.5,
+        backgroundColor: "rgba(255,255,255,0.35)",
+        px: 2,
+      }}
+    >
+      <Box>
+        <Typography variant="body1" sx={{ fontWeight: 600, mb: 0.5 }}>
+          {title}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {subtitle}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
 export default function RosterTab({ showToast }) {
   const qc = useQueryClient();
 
@@ -132,8 +159,11 @@ export default function RosterTab({ showToast }) {
   const totalMinutes = getTotalMinutes(form.startTime, form.endTime);
   const totalLabel = formatMinutes(totalMinutes);
 
+  // Right panel state helpers
+  const hasLoadedRosterList = listLoadKey !== null;
+
   // Right panel: load roster list by date range, optionally filtered by name or ID
-  const { data: rosterRows = [], isFetching } = useQuery({
+  const { data: rosterRows = [], isFetching, isError } = useQuery({
     queryKey: ["roster-list", listLoadKey],
     queryFn: () => {
       let url =
@@ -513,18 +543,16 @@ export default function RosterTab({ showToast }) {
             </PrimaryButton>
           </InlineFields>
 
-          {rosterRows.length === 0 ? (
-            <Box
-              sx={{
-                p: 1.5,
-                border: "1px solid",
-                borderColor: "divider",
-                borderRadius: 1.5,
-                color: "text.secondary",
-              }}
-            >
-              No data
-            </Box>
+          {!hasLoadedRosterList ? null : isError ? (
+            <EmptyStateMessage
+              title="Unable to load rostering list."
+              subtitle="Please try again or check the API response."
+            />
+          ) : rosterRows.length === 0 ? (
+            <EmptyStateMessage
+              title="No staff rostered for this period."
+              subtitle="Try selecting a different date range."
+            />
           ) : (
             <Box
               sx={{
