@@ -22,7 +22,6 @@ import StationsTab from "../tabs/StationsTab.jsx";
 import ClockingTab from "../tabs/ClockingTab.jsx";
 import RegistrationsTab from "../tabs/RegistrationsTab.jsx";
 import ReportsTab from "../tabs/ReportsTab.jsx";
-import PayslipsTab from "../tabs/PayslipsTab.jsx";
 import ExceptionsTab from "../tabs/ExceptionsTab.jsx";
 
 export { api };
@@ -46,7 +45,6 @@ const TABS = [
     Component: RegistrationsTab,
   },
   { id: "reports", label: "Reports", Component: ReportsTab },
-  { id: "payslips", label: "Pay Slips", Component: PayslipsTab },
   { id: "exceptions", label: "Exception Reports", Component: ExceptionsTab },
 ];
 
@@ -80,17 +78,25 @@ function AdminApp() {
       />
 
       <Box
-        sx={{ position: "relative", zIndex: 1, px: { xs: 2, md: 5 }, py: 4 }}
+        sx={{
+          position: "relative",
+          zIndex: 1,
+          pl: { xs: 2, md: 0 },
+          pr: { xs: 2, md: 5 },
+          pt: 0,
+          pb: 4,
+          mt: 3,
+        }}
       >
         <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 3 }}>
+          <Grid size={{ xs: 12, md: 2.5 }}>
             <AdminSidebar
               tabs={TABS}
               activeTab={activeTab}
               setActiveTab={setActiveTab}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 9 }}>
+          <Grid size={{ xs: 12, md: 9.5 }}>
             {ActiveComponent && <ActiveComponent showToast={showToast} />}
           </Grid>
         </Grid>
