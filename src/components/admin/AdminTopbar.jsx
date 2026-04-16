@@ -32,6 +32,9 @@ export default function AdminTopbar({
       >
         <Toolbar
           sx={{
+            width: "100%",
+            maxWidth: 1400,
+            mx: "auto",
             px: { xs: 2, md: 5 },
             py: 2,
             display: "flex",

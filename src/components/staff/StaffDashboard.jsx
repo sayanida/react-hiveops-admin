@@ -321,22 +321,31 @@ function BreaksCard({ showToast }) {
 
 export default function StaffDashboard({ showToast }) {
   return (
-    <Box sx={{ position: "relative", zIndex: 1, px: { xs: 2, md: 5 }, py: 4 }}>
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: { xs: "1fr", lg: "360px 1fr" },
-          gap: 3,
-        }}
-      >
-        <ReaderPanel showToast={showToast} />
+    <Box
+      sx={{
+        position: "relative",
+        zIndex: 1,
+        px: { xs: 2, md: 5 },
+        py: 4,
+      }}
+    >
+      <Box sx={{ width: "100%", maxWidth: "1400px", mx: "auto" }}>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", lg: "360px 1fr" },
+            gap: 3,
+          }}
+        >
+          <ReaderPanel showToast={showToast} />
 
-        <Box sx={{ display: "grid", gap: 2.5 }}>
-          <EventsCard showToast={showToast} />
-          <TwoColumn>
-            <RosterCard showToast={showToast} />
-            <BreaksCard showToast={showToast} />
-          </TwoColumn>
+          <Box sx={{ display: "grid", gap: 2.5 }}>
+            <EventsCard showToast={showToast} />
+            <TwoColumn>
+              <RosterCard showToast={showToast} />
+              <BreaksCard showToast={showToast} />
+            </TwoColumn>
+          </Box>
         </Box>
       </Box>
     </Box>

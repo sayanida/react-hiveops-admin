@@ -81,25 +81,26 @@ function AdminApp() {
         sx={{
           position: "relative",
           zIndex: 1,
-          pl: { xs: 2, md: 0 },
-          pr: { xs: 2, md: 5 },
+          px: { xs: 2, md: 5 },
           pt: 0,
           pb: 4,
           mt: 3,
         }}
       >
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 2.5 }}>
-            <AdminSidebar
-              tabs={TABS}
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            />
+        <Box sx={{ width: "100%", maxWidth: "1400px", mx: "auto" }}>
+          <Grid container spacing={3}>
+            <Grid size={{ xs: 12, md: 2.5 }}>
+              <AdminSidebar
+                tabs={TABS}
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 9.5 }}>
+              {ActiveComponent && <ActiveComponent showToast={showToast} />}
+            </Grid>
           </Grid>
-          <Grid size={{ xs: 12, md: 9.5 }}>
-            {ActiveComponent && <ActiveComponent showToast={showToast} />}
-          </Grid>
-        </Grid>
+        </Box>
       </Box>
 
       <Toast toast={toast} />

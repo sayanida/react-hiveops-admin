@@ -10,19 +10,9 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControlLabel,
   InputAdornment,
   MenuItem,
   Pagination,
-  Paper,
-  Radio,
-  RadioGroup,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
 } from "@mui/material";
@@ -51,7 +41,6 @@ const initialForm = {
   role: "",
   standardRate: "",
   overtimeRate: "",
-  hoursType: "WEEKLY", // "WEEKLY" | "PATTERNED"
   weeklyHours: "",
   schedulePattern: "",
 };
@@ -59,14 +48,15 @@ const initialForm = {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MOBILE_RE = /^\d{8,}$/;
 const POST_CODE_RE = /^\d{4}$/;
+const BIRTHDAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 const SEX_TO_API = {
-  Male: "MALE",
-  Female: "FEMALE",
-  Other: "OTHER",
-  MALE: "MALE",
-  FEMALE: "FEMALE",
-  OTHER: "OTHER",
+  Male: "Male",
+  Female: "Female",
+  Other: "Other",
+  MALE: "Male",
+  FEMALE: "Female",
+  OTHER: "Other",
 };
 
 const CONTRACT_TO_API = {
@@ -79,12 +69,12 @@ const CONTRACT_TO_API = {
 };
 
 const SEX_TO_FORM = {
-  MALE: "MALE",
-  FEMALE: "FEMALE",
-  OTHER: "OTHER",
-  Male: "MALE",
-  Female: "FEMALE",
-  Other: "OTHER",
+  MALE: "Male",
+  FEMALE: "Female",
+  OTHER: "Other",
+  Male: "Male",
+  Female: "Female",
+  Other: "Other",
 };
 
 const CONTRACT_TO_FORM = {
@@ -95,74 +85,6 @@ const CONTRACT_TO_FORM = {
   "Full Time": "FULL_TIME",
   "Part Time": "PART_TIME",
 };
-
-const DAYS_OF_WEEK = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
-];
-
-function createEmptyPatternRows() {
-  return DAYS_OF_WEEK.reduce((acc, day) => {
-    acc[day] = { start: "", end: "" };
-    return acc;
-  }, {});
-}
-
-function parseTimeToMinutes(value) {
-  if (!value || !value.includes(":")) return null;
-  const [h, m] = value.split(":").map(Number);
-  if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
-  return h * 60 + m;
-}
-
-function calculateDurationHours(start, end) {
-  const startMin = parseTimeToMinutes(start);
-  const endMin = parseTimeToMinutes(end);
-  if (startMin == null || endMin == null) return 0;
-  let diff = endMin - startMin;
-  if (diff < 0) diff += 24 * 60;
-  return diff / 60;
-}
-
-function buildPatternSchedule(patternRows) {
-  const rows = DAYS_OF_WEEK.map((day) => {
-    const start = patternRows[day]?.start || "";
-    const end = patternRows[day]?.end || "";
-    const duration = Number(calculateDurationHours(start, end).toFixed(2));
-    return { day, start, end, duration };
-  }).filter((row) => row.start && row.end);
-
-  return rows.length > 0 ? JSON.stringify(rows) : "";
-}
-
-function parsePatternSchedule(schedulePattern) {
-  const empty = createEmptyPatternRows();
-  if (!schedulePattern) return empty;
-
-  try {
-    const parsed = JSON.parse(schedulePattern);
-    if (!Array.isArray(parsed)) return empty;
-
-    const next = { ...empty };
-    parsed.forEach((row) => {
-      const day = row?.day;
-      if (!day || !next[day]) return;
-      next[day] = {
-        start: row?.start || "",
-        end: row?.end || "",
-      };
-    });
-
-    return next;
-  } catch {
-    return empty;
-  }
-}
 
 function normalizeStaffRowForTable(row) {
   return {
@@ -208,6 +130,9 @@ function validateStaffForm(values) {
   }
 
   if (values.birthday) {
+    if (!BIRTHDAY_RE.test(values.birthday.trim())) {
+      return "Birthday must be in YYYY-MM-DD format.";
+    }
     const birthday = new Date(values.birthday);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -216,14 +141,29 @@ function validateStaffForm(values) {
     }
   }
 
-  // for (const key of ["standardRate", "overtimeRate"]) {
-  //   const num = Number(values[key]);
-  //   if (Number.isNaN(num) || num < 0) {
-  //     return "Hourly rate must be a number greater than or equal to 0.";
-  //   }
-  // }
+  for (const key of ["standardRate", "overtimeRate"]) {
+    const num = Number(values[key]);
+    if (Number.isNaN(num) || num < 0) {
+      return "Hourly rate must be a number greater than or equal to 0.";
+    }
+  }
 
-  // Temporarily disabled: weekly/patterned standard-hours validation.
+  const hasWeekly = values.weeklyHours.trim() !== "";
+  const hasPattern = values.schedulePattern.trim() !== "";
+
+  if (hasWeekly && hasPattern) {
+    return "Provide exactly one of weekly hours or schedule pattern.";
+  }
+  if (!hasWeekly && !hasPattern) {
+    return "Either weekly hours or schedule pattern is required.";
+  }
+
+  if (hasWeekly) {
+    const weeklyHours = Number(values.weeklyHours);
+    if (Number.isNaN(weeklyHours) || weeklyHours <= 0) {
+      return "Weekly hours must be a number greater than 0.";
+    }
+  }
 
   return "";
 }
@@ -236,9 +176,6 @@ export default function StaffTab({ showToast }) {
   const [form, setForm] = useState(initialForm);
   const [editingId, setEditingId] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [patternRows, setPatternRows] = useState(() =>
-    createEmptyPatternRows(),
-  );
 
   const set = (e) =>
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -266,9 +203,9 @@ export default function StaffTab({ showToast }) {
   const tableRows = filteredRows.map((row) => ({
     ID: row.id ?? "",
     Name: row.name ?? "",
-    "Date of Birth": row.birthday ?? "",
-    Gender: row.sex ?? "",
-    Postcode: row.postCode ?? "",
+    // "Date of Birth": row.birthday ?? "",
+    // Gender: row.sex ?? "",
+    // Postcode: row.postCode ?? "",
     Role: row.role ?? "",
     "Std Rate": row.standardRate ?? "",
     "OT Rate": row.overtimeRate ?? "",
@@ -331,7 +268,6 @@ export default function StaffTab({ showToast }) {
     const rowWeeklyHours = row.weeklyHours ?? row.weekly_hours;
     const rowSchedulePattern =
       row.schedulePattern ?? row.schedule_pattern ?? "";
-    const rowHoursType = rowSchedulePattern ? "PATTERNED" : "WEEKLY";
     setEditingId(rowId || null);
     setForm({
       id: String(rowId || ""),
@@ -347,36 +283,15 @@ export default function StaffTab({ showToast }) {
       role: row.role ?? "",
       standardRate: String(row.standardRate ?? row.standard_rate ?? ""),
       overtimeRate: String(row.overtimeRate ?? row.overtime_rate ?? ""),
-      hoursType: rowHoursType,
-      weeklyHours:
-        rowHoursType === "WEEKLY" && rowWeeklyHours != null
-          ? String(rowWeeklyHours)
-          : "",
-      schedulePattern:
-        rowHoursType === "PATTERNED" ? String(rowSchedulePattern) : "",
+      weeklyHours: rowWeeklyHours != null ? String(rowWeeklyHours) : "",
+      schedulePattern: rowSchedulePattern ? String(rowSchedulePattern) : "",
     });
-    setPatternRows(
-      rowHoursType === "PATTERNED"
-        ? parsePatternSchedule(String(rowSchedulePattern || ""))
-        : createEmptyPatternRows(),
-    );
     setIsDialogOpen(true);
   };
 
   const resetForm = () => {
     setForm(initialForm);
     setEditingId(null);
-    setPatternRows(createEmptyPatternRows());
-  };
-
-  const setPatternCell = (day, key, value) => {
-    setPatternRows((prev) => ({
-      ...prev,
-      [day]: {
-        ...prev[day],
-        [key]: value,
-      },
-    }));
   };
 
   const openCreateDialog = () => {
@@ -409,6 +324,19 @@ export default function StaffTab({ showToast }) {
     const email = form.email.trim();
     const address = form.address.trim();
     const postCode = form.postCode.trim();
+    const weeklyHoursRaw = form.weeklyHours.trim();
+    const schedulePatternRaw = form.schedulePattern.trim();
+
+    const hasWeekly = weeklyHoursRaw !== "";
+    const hasPattern = schedulePatternRaw !== "";
+
+    if ((hasWeekly && hasPattern) || (!hasWeekly && !hasPattern)) {
+      showToast(
+        "Provide exactly one of weekly hours or schedule pattern.",
+        true,
+      );
+      return;
+    }
 
     const payload = {
       ...(trimmedId ? { id: Number(trimmedId) } : {}),
@@ -423,8 +351,8 @@ export default function StaffTab({ showToast }) {
       ...(email ? { email } : {}),
       ...(address ? { address } : {}),
       ...(postCode ? { postCode } : {}),
-      weeklyHours: null,
-      schedulePattern: null,
+      weeklyHours: hasWeekly ? Number(weeklyHoursRaw) : null,
+      schedulePattern: hasPattern ? schedulePatternRaw : null,
     };
 
     saveMutation.mutate(payload);
@@ -553,7 +481,6 @@ export default function StaffTab({ showToast }) {
               </Field>
               <Field label="Role">
                 <TextField
-                  select
                   name="role"
                   type="text"
                   required
@@ -561,17 +488,11 @@ export default function StaffTab({ showToast }) {
                   onChange={set}
                   size="small"
                   fullWidth
-                >
-                  <MenuItem value="OFFICE_ADMIN">Office Admin</MenuItem>
-                  <MenuItem value="ROSTER_ADMIN">Roster Admin</MenuItem>
-                  <MenuItem value="MANAGER_SUPERVISOR">
-                    Manager/Supervisor
-                  </MenuItem>
-                  <MenuItem value="WORKER">Worker</MenuItem>
-                </TextField>
+                  placeholder="e.g. Supervisor"
+                />
               </Field>
             </Box>
-            {/* <Box
+            <Box
               sx={{
                 borderTop: "1px solid",
                 borderColor: "divider",
@@ -579,7 +500,7 @@ export default function StaffTab({ showToast }) {
                 pt: 2,
               }}
             >
-              <Typography variant="h7" sx={{ mb: 0.5, fontWeight: 600 }}>
+              <Typography variant="subtitle2" sx={{ mb: 0.5, fontWeight: 600 }}>
                 Pay Rates
               </Typography>
               <Box
@@ -627,29 +548,22 @@ export default function StaffTab({ showToast }) {
                 pt: 2,
               }}
             >
-              <Typography variant="h7" sx={{ mb: 0.75, fontWeight: 600 }}>
+              <Typography
+                variant="subtitle2"
+                sx={{ mb: 0.75, fontWeight: 600 }}
+              >
                 Standard Hours
               </Typography>
-
-              <RadioGroup
-                row
-                name="hoursType"
-                value={form.hoursType}
-                onChange={set}
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: {
+                    xs: "1fr",
+                    md: "repeat(2, minmax(0, 1fr))",
+                  },
+                  gap: 2,
+                }}
               >
-                <FormControlLabel
-                  value="WEEKLY"
-                  control={<Radio size="small" />}
-                  label="Weekly Hours"
-                />
-                <FormControlLabel
-                  value="PATTERNED"
-                  control={<Radio size="small" />}
-                  label="Patterned"
-                />
-              </RadioGroup>
-
-              {form.hoursType === "WEEKLY" ? (
                 <Field label="Weekly Total Hours">
                   <TextField
                     name="weeklyHours"
@@ -658,81 +572,34 @@ export default function StaffTab({ showToast }) {
                     onChange={set}
                     size="small"
                     fullWidth
-                    inputProps={{ min: 0 }}
-                    helperText="e.g. 38"
+                    inputProps={{ min: 0, step: 0.1 }}
+                    helperText="Provide this OR schedule pattern"
                   />
                 </Field>
-              ) : (
-                <TableContainer
-                  component={Paper}
-                  variant="outlined"
-                  sx={{ mt: 1 }}
-                >
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell sx={{ fontWeight: 700 }}>Day</TableCell>
-                        <TableCell sx={{ fontWeight: 700 }}>
-                          Start Time
-                        </TableCell>
-                        <TableCell sx={{ fontWeight: 700 }}>End Time</TableCell>
-                        <TableCell sx={{ fontWeight: 700 }}>
-                          Duration (hrs)
-                        </TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {DAYS_OF_WEEK.map((day) => {
-                        const startTime = patternRows[day]?.start || "";
-                        const endTime = patternRows[day]?.end || "";
-                        const duration = calculateDurationHours(
-                          startTime,
-                          endTime,
-                        );
-                        return (
-                          <TableRow key={day}>
-                            <TableCell>{day}</TableCell>
-                            <TableCell>
-                              <TextField
-                                type="time"
-                                size="small"
-                                value={startTime}
-                                onChange={(e) =>
-                                  setPatternCell(day, "start", e.target.value)
-                                }
-                                InputLabelProps={{ shrink: true }}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <TextField
-                                type="time"
-                                size="small"
-                                value={endTime}
-                                onChange={(e) =>
-                                  setPatternCell(day, "end", e.target.value)
-                                }
-                                InputLabelProps={{ shrink: true }}
-                              />
-                            </TableCell>
-                            <TableCell>{duration.toFixed(2)}</TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              )}
-            </Box> */}
+                <Field label="Schedule Pattern">
+                  <TextField
+                    name="schedulePattern"
+                    value={form.schedulePattern}
+                    onChange={set}
+                    size="small"
+                    fullWidth
+                    placeholder="e.g. Mon-Fri 9-5"
+                    helperText="Provide this OR weekly hours"
+                  />
+                </Field>
+              </Box>
+            </Box>
 
-            {/* <Box
+            {/*
+            <Box
               sx={{
                 borderTop: "1px solid",
                 borderColor: "divider",
                 mt: 2,
                 pt: 2,
               }}
-            > */}
-            {/* <Typography variant="subtitle2" sx={{ mb: 0.5, fontWeight: 600 }}>
+            >
+              <Typography variant="subtitle2" sx={{ mb: 0.5, fontWeight: 600 }}>
                 Optional Details
               </Typography>
               <Box
@@ -765,9 +632,9 @@ export default function StaffTab({ showToast }) {
                     fullWidth
                   >
                     <MenuItem value="">Select</MenuItem>
-                    <MenuItem value="MALE">Male</MenuItem>
-                    <MenuItem value="FEMALE">Female</MenuItem>
-                    <MenuItem value="OTHER">Other</MenuItem>
+                    <MenuItem value="Male">Male</MenuItem>
+                    <MenuItem value="Female">Female</MenuItem>
+                    <MenuItem value="Other">Other</MenuItem>
                   </TextField>
                 </Field>
 
@@ -815,8 +682,9 @@ export default function StaffTab({ showToast }) {
                     fullWidth
                   />
                 </Field>
-              </Box> */}
-            {/* </Box> */}
+              </Box>
+            </Box>
+            */}
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2 }}>
