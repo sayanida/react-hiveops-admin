@@ -51,12 +51,12 @@ const initialForm = {
 // const BIRTHDAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 const SEX_TO_API = {
-  Male: "Male",
-  Female: "Female",
-  Other: "Other",
-  MALE: "Male",
-  FEMALE: "Female",
-  OTHER: "Other",
+  Male: "MALE",
+  Female: "FEMALE",
+  Other: "OTHER",
+  MALE: "MALE",
+  FEMALE: "FEMALE",
+  OTHER: "OTHER",
 };
 
 const CONTRACT_TO_API = {
