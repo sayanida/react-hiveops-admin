@@ -6,9 +6,14 @@
 	•	Props: array of tabs, current active tab ID, tab switch function
 */
 
-import { Button, Paper, Stack } from "@mui/material";
+import { Button, Divider, Paper, Stack } from "@mui/material";
 
-export default function AdminSidebar({ tabs, activeTab, setActiveTab }) {
+export default function AdminSidebar({
+  tabs,
+  activeTab,
+  setActiveTab,
+  onLogout,
+}) {
   return (
     <Paper
       variant="outlined"
@@ -22,7 +27,7 @@ export default function AdminSidebar({ tabs, activeTab, setActiveTab }) {
         position: "fixed",
       }}
     >
-      <Stack spacing={1}>
+      <Stack spacing={1} sx={{ minHeight: "100%" }}>
         {tabs.map((t) => {
           const isActive = activeTab === t.id;
           return (
@@ -42,6 +47,22 @@ export default function AdminSidebar({ tabs, activeTab, setActiveTab }) {
             </Button>
           );
         })}
+
+        <Divider sx={{ my: 0.5 }} />
+        <Button
+          variant="text"
+          color="inherit"
+          onClick={onLogout}
+          sx={{
+            color: "primary.main",
+            justifyContent: "flex-start",
+            textAlign: "left",
+            textTransform: "none",
+            px: 1,
+          }}
+        >
+          Logout
+        </Button>
       </Stack>
     </Paper>
   );

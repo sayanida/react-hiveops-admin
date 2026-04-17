@@ -6,9 +6,8 @@
 	•	Props: API URL, update function, toast notification function, input ID
 */
 
-import { Icon } from "@iconify/react";
-import person24Filled from "@iconify-icons/fluent/person-24-filled";
 import { AppBar, Box, Button, Toolbar, Typography } from "@mui/material";
+import PersonIcon from "@mui/icons-material/Person";
 import ApiConfigBar from "../common/ApiConfigBar.jsx";
 
 export default function AdminTopbar({
@@ -72,7 +71,7 @@ export default function AdminTopbar({
           <Button
             variant="outlined"
             color="primary"
-            startIcon={<Icon icon={person24Filled} width={20} />}
+            startIcon={<PersonIcon />}
             sx={{
               display: "inline-flex",
               alignItems: "center",
