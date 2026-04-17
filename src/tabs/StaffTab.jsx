@@ -1,8 +1,5 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Icon } from "@iconify/react";
-import add24Filled from "@iconify-icons/fluent/add-24-filled";
-import search24Filled from "@iconify-icons/fluent/search-24-filled";
 import {
   Box,
   Button,
@@ -16,6 +13,9 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import LockIcon from "@mui/icons-material/Lock";
+import SearchIcon from "@mui/icons-material/Search";
 import { adminApi as api } from "../utils/api.js";
 import {
   normalizeList,
@@ -41,14 +41,14 @@ const initialForm = {
   role: "",
   standardRate: "",
   overtimeRate: "",
-  weeklyHours: "",
+  weeklyHours: "38",
   schedulePattern: "",
 };
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MOBILE_RE = /^\d{8,}$/;
-const POST_CODE_RE = /^\d{4}$/;
-const BIRTHDAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+// const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// const MOBILE_RE = /^\d{8,}$/;
+// const POST_CODE_RE = /^\d{4}$/;
+// const BIRTHDAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 const SEX_TO_API = {
   Male: "Male",
@@ -117,29 +117,29 @@ function validateStaffForm(values) {
     return "Overtime rate is required.";
   }
 
-  if (values.email && !EMAIL_RE.test(values.email.trim())) {
-    return "Invalid email format.";
-  }
+  // if (values.email && !EMAIL_RE.test(values.email.trim())) {
+  //   return "Invalid email format.";
+  // }
 
-  if (values.mobilePhone && !MOBILE_RE.test(values.mobilePhone.trim())) {
-    return "Invalid mobile phone number format.";
-  }
+  // if (values.mobilePhone && !MOBILE_RE.test(values.mobilePhone.trim())) {
+  //   return "Invalid mobile phone number format.";
+  // }
 
-  if (values.postCode && !POST_CODE_RE.test(values.postCode.trim())) {
-    return "Post code must be a 4-digit number.";
-  }
+  // if (values.postCode && !POST_CODE_RE.test(values.postCode.trim())) {
+  //   return "Post code must be a 4-digit number.";
+  // }
 
-  if (values.birthday) {
-    if (!BIRTHDAY_RE.test(values.birthday.trim())) {
-      return "Birthday must be in YYYY-MM-DD format.";
-    }
-    const birthday = new Date(values.birthday);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (birthday > today) {
-      return "Birthday cannot be a future date.";
-    }
-  }
+  // if (values.birthday) {
+  //   if (!BIRTHDAY_RE.test(values.birthday.trim())) {
+  //     return "Birthday must be in YYYY-MM-DD format.";
+  //   }
+  //   const birthday = new Date(values.birthday);
+  //   const today = new Date();
+  //   today.setHours(0, 0, 0, 0);
+  //   if (birthday > today) {
+  //     return "Birthday cannot be a future date.";
+  //   }
+  // }
 
   for (const key of ["standardRate", "overtimeRate"]) {
     const num = Number(values[key]);
@@ -180,6 +180,24 @@ export default function StaffTab({ showToast }) {
   const set = (e) =>
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
+  const setWeeklyHours = (e) => {
+    const value = e.target.value;
+    setForm((f) => ({
+      ...f,
+      weeklyHours: value,
+      schedulePattern: value.trim() ? "" : f.schedulePattern,
+    }));
+  };
+
+  const setSchedulePattern = (e) => {
+    const value = e.target.value;
+    setForm((f) => ({
+      ...f,
+      schedulePattern: value,
+      weeklyHours: value.trim() ? "" : f.weeklyHours,
+    }));
+  };
+
   // ── List query (load once and filter on client by name or id)
   const { data: staffRows = [] } = useQuery({
     queryKey: ["staff"],
@@ -200,6 +218,10 @@ export default function StaffTab({ showToast }) {
       })
     : staffRows;
 
+  const filteredStaffById = new Map(
+    filteredRows.map((row) => [String(row.id ?? ""), row]),
+  );
+
   const tableRows = filteredRows.map((row) => ({
     ID: row.id ?? "",
     Name: row.name ?? "",
@@ -215,7 +237,6 @@ export default function StaffTab({ showToast }) {
   const start = (page - 1) * rowsPerPage;
   const end = start + rowsPerPage;
   const pagedTableRows = tableRows.slice(start, end);
-  const pagedStaffRows = filteredRows.slice(start, end);
 
   useEffect(() => {
     setPage(1);
@@ -330,14 +351,6 @@ export default function StaffTab({ showToast }) {
     const hasWeekly = weeklyHoursRaw !== "";
     const hasPattern = schedulePatternRaw !== "";
 
-    if ((hasWeekly && hasPattern) || (!hasWeekly && !hasPattern)) {
-      showToast(
-        "Provide exactly one of weekly hours or schedule pattern.",
-        true,
-      );
-      return;
-    }
-
     const payload = {
       ...(trimmedId ? { id: Number(trimmedId) } : {}),
       name,
@@ -384,7 +397,7 @@ export default function StaffTab({ showToast }) {
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
-                  <Icon icon={search24Filled} width={18} />
+                  <SearchIcon fontSize="small" />
                 </InputAdornment>
               ),
             }}
@@ -394,7 +407,7 @@ export default function StaffTab({ showToast }) {
               type="button"
               variant="contained"
               color="primary"
-              startIcon={<Icon icon={add24Filled} width={20} />}
+              startIcon={<AddIcon />}
               onClick={openCreateDialog}
               sx={{ textTransform: "none" }}
             >
@@ -405,10 +418,15 @@ export default function StaffTab({ showToast }) {
         <DataTable
           rows={pagedTableRows}
           actionsHeader=""
-          renderRowActions={(_, i) => (
+          renderRowActions={(tableRow) => (
             <GhostButton
               type="button"
-              onClick={() => startEdit(pagedStaffRows[i])}
+              onClick={() => {
+                const selected = filteredStaffById.get(
+                  String(tableRow.ID ?? ""),
+                );
+                if (selected) startEdit(selected);
+              }}
             >
               Edit
             </GhostButton>
@@ -441,17 +459,31 @@ export default function StaffTab({ showToast }) {
                 gap: 2,
               }}
             >
-              {editingId ? (
-                <Field label="Staff ID">
-                  <TextField
-                    name="id"
-                    value={form.id}
-                    size="small"
-                    fullWidth
-                    InputProps={{ readOnly: true }}
-                  />
-                </Field>
-              ) : null}
+              <Field label="Staff ID">
+                <TextField
+                  name="id"
+                  value={editingId ? form.id : ""}
+                  size="small"
+                  fullWidth
+                  placeholder={
+                    editingId ? "" : "Will be auto-assigned by the system"
+                  }
+                  disabled
+                  InputProps={{
+                    readOnly: true,
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LockIcon fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }}
+                  helperText={
+                    editingId
+                      ? "Staff ID is locked and cannot be changed."
+                      : "Staff ID is assigned automatically when you save a new record."
+                  }
+                />
+              </Field>
               <Field label="Name">
                 <TextField
                   name="name"
@@ -569,18 +601,18 @@ export default function StaffTab({ showToast }) {
                     name="weeklyHours"
                     type="number"
                     value={form.weeklyHours}
-                    onChange={set}
+                    onChange={setWeeklyHours}
                     size="small"
                     fullWidth
                     inputProps={{ min: 0, step: 0.1 }}
-                    helperText="Provide this OR schedule pattern"
+                    helperText="Provide this OR schedule pattern. Default is 38 hrs/week."
                   />
                 </Field>
                 <Field label="Schedule Pattern">
                   <TextField
                     name="schedulePattern"
                     value={form.schedulePattern}
-                    onChange={set}
+                    onChange={setSchedulePattern}
                     size="small"
                     fullWidth
                     placeholder="e.g. Mon-Fri 9-5"

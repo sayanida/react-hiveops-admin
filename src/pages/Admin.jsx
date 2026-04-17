@@ -10,6 +10,7 @@ Admin.jsx
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Box, Grid } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 import useToast from "../hooks/useToast.js";
 import Toast from "../components/common/Toast.jsx";
 import AdminTopbar from "../components/admin/AdminTopbar.jsx";
@@ -50,11 +51,16 @@ const TABS = [
 
 // ─── Root App ─────────────────────────────────────────────────────────────────
 function AdminApp() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("staff");
   const [apiBase, setApiBase] = useState(
     () => localStorage.getItem("timeclock_api_base") || "",
   );
   const { toast, showToast } = useToast();
+
+  const handleLogout = () => {
+    navigate("/", { replace: true });
+  };
 
   const ActiveComponent = TABS.find((t) => t.id === activeTab)?.Component;
 
@@ -94,6 +100,7 @@ function AdminApp() {
                 tabs={TABS}
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
+                onLogout={handleLogout}
               />
             </Grid>
             <Grid size={{ xs: 12, md: 9.5 }}>
