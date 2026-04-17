@@ -190,25 +190,40 @@ export default function StaffTab({ showToast }) {
   const [editingId, setEditingId] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const set = (e) =>
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+  const handleFieldChange = (e) => {
+    const { name, value } = e.target;
 
-  const setWeeklyHours = (e) => {
-    const value = e.target.value;
-    setForm((f) => ({
-      ...f,
-      weeklyHours: value,
-      schedulePattern: value.trim() ? "" : f.schedulePattern,
-    }));
-  };
+    setForm((f) => {
+      if (name === "weeklyHours") {
+        return {
+          ...f,
+          weeklyHours: value,
+          schedulePattern: value.trim() ? "" : f.schedulePattern,
+        };
+      }
 
-  const setSchedulePattern = (e) => {
-    const value = e.target.value;
-    setForm((f) => ({
-      ...f,
-      schedulePattern: value,
-      weeklyHours: value.trim() ? "" : f.weeklyHours,
-    }));
+      if (name === "schedulePattern") {
+        return {
+          ...f,
+          schedulePattern: value,
+          weeklyHours: value.trim() ? "" : f.weeklyHours,
+        };
+      }
+
+      return { ...f, [name]: value };
+    });
+
+    setFieldErrors((prev) => {
+      if (!prev[name] && name !== "weeklyHours" && name !== "schedulePattern") {
+        return prev;
+      }
+
+      const next = { ...prev };
+      delete next[name];
+      if (name === "weeklyHours") delete next.schedulePattern;
+      if (name === "schedulePattern") delete next.weeklyHours;
+      return next;
+    });
   };
 
   // ── List query (load once and filter on client by name or id)
