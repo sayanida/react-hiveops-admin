@@ -20,10 +20,10 @@ steps:
   - checkout: self
     displayName: Checkout bee-web
 
-  - task: NodeTool@0
+  - task: UseNode@1
     displayName: Use Node.js $(nodeVersion)
     inputs:
-      versionSpec: $(nodeVersion)
+      version: $(nodeVersion)
 
   - script: npm ci
     displayName: npm ci
