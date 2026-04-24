@@ -1,19 +1,31 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { MenuItem, TextField } from "@mui/material";
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  InputAdornment,
+  MenuItem,
+  Pagination,
+  TextField,
+  Typography,
+} from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import LockIcon from "@mui/icons-material/Lock";
+import SearchIcon from "@mui/icons-material/Search";
 import { adminApi as api } from "../utils/api.js";
 import {
   normalizeList,
   DataTable,
   Field,
   errMsg,
-  FormActions,
   GhostButton,
-  InlineFields,
   PageHeader,
   PanelCard,
   PrimaryButton,
-  TwoColumn,
 } from "./shared.jsx";
 
 const initialForm = {
@@ -29,11 +41,14 @@ const initialForm = {
   role: "",
   standardRate: "",
   overtimeRate: "",
+  weeklyHours: "38",
+  schedulePattern: "",
 };
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MOBILE_RE = /^\d{8,}$/;
-const POST_CODE_RE = /^\d{4}$/;
+// const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// const MOBILE_RE = /^\d{8,}$/;
+// const POST_CODE_RE = /^\d{4}$/;
+// const BIRTHDAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 const SEX_TO_API = {
   Male: "MALE",
@@ -54,12 +69,12 @@ const CONTRACT_TO_API = {
 };
 
 const SEX_TO_FORM = {
-  MALE: "MALE",
-  FEMALE: "FEMALE",
-  OTHER: "OTHER",
-  Male: "MALE",
-  Female: "FEMALE",
-  Other: "OTHER",
+  MALE: "Male",
+  FEMALE: "Female",
+  OTHER: "Other",
+  Male: "Male",
+  Female: "Female",
+  Other: "Other",
 };
 
 const CONTRACT_TO_FORM = {
@@ -70,6 +85,25 @@ const CONTRACT_TO_FORM = {
   "Full Time": "FULL_TIME",
   "Part Time": "PART_TIME",
 };
+
+function normalizeStaffRowForTable(row) {
+  return {
+    id: row.id ?? row.staffId ?? "",
+    name: row.name ?? "",
+    birthday: row.birthday ?? "",
+    sex: row.sex ?? "",
+    mobilePhone: row.mobilePhone ?? row.mobile_phone ?? "",
+    email: row.email ?? "",
+    address: row.address ?? "",
+    postCode: row.postCode ?? row.post_code ?? "",
+    contractType: row.contractType ?? row.contract_type ?? "",
+    role: row.role ?? "",
+    standardRate: row.standardRate ?? row.standard_rate ?? "",
+    overtimeRate: row.overtimeRate ?? row.overtime_rate ?? "",
+    weeklyHours: row.weeklyHours ?? row.weekly_hours ?? null,
+    schedulePattern: row.schedulePattern ?? row.schedule_pattern ?? null,
+  };
+}
 
 function validateStaffForm(values) {
   if (!values.name.trim()) return "Name is required.";
@@ -83,26 +117,29 @@ function validateStaffForm(values) {
     return "Overtime rate is required.";
   }
 
-  if (values.email && !EMAIL_RE.test(values.email.trim())) {
-    return "Invalid email format.";
-  }
+  // if (values.email && !EMAIL_RE.test(values.email.trim())) {
+  //   return "Invalid email format.";
+  // }
 
-  if (values.mobilePhone && !MOBILE_RE.test(values.mobilePhone.trim())) {
-    return "Invalid mobile phone number format.";
-  }
+  // if (values.mobilePhone && !MOBILE_RE.test(values.mobilePhone.trim())) {
+  //   return "Invalid mobile phone number format.";
+  // }
 
-  if (values.postCode && !POST_CODE_RE.test(values.postCode.trim())) {
-    return "Post code must be a 4-digit number.";
-  }
+  // if (values.postCode && !POST_CODE_RE.test(values.postCode.trim())) {
+  //   return "Post code must be a 4-digit number.";
+  // }
 
-  if (values.birthday) {
-    const birthday = new Date(values.birthday);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (birthday > today) {
-      return "Birthday cannot be a future date.";
-    }
-  }
+  // if (values.birthday) {
+  //   if (!BIRTHDAY_RE.test(values.birthday.trim())) {
+  //     return "Birthday must be in YYYY-MM-DD format.";
+  //   }
+  //   const birthday = new Date(values.birthday);
+  //   const today = new Date();
+  //   today.setHours(0, 0, 0, 0);
+  //   if (birthday > today) {
+  //     return "Birthday cannot be a future date.";
+  //   }
+  // }
 
   for (const key of ["standardRate", "overtimeRate"]) {
     const num = Number(values[key]);
@@ -111,38 +148,137 @@ function validateStaffForm(values) {
     }
   }
 
+  const hasWeekly = values.weeklyHours.trim() !== "";
+  const hasPattern = values.schedulePattern.trim() !== "";
+
+  if (hasWeekly && hasPattern) {
+    return "Provide exactly one of weekly hours or schedule pattern.";
+  }
+  if (!hasWeekly && !hasPattern) {
+    return "Either weekly hours or schedule pattern is required.";
+  }
+
+  if (hasWeekly) {
+    const weeklyHours = Number(values.weeklyHours);
+    if (Number.isNaN(weeklyHours) || weeklyHours <= 0) {
+      return "Weekly hours must be a number greater than 0.";
+    }
+  }
+
   return "";
 }
 
 export default function StaffTab({ showToast }) {
   const qc = useQueryClient();
+  const rowsPerPage = 10;
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [form, setForm] = useState(initialForm);
   const [editingId, setEditingId] = useState(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const set = (e) =>
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
-  // ── List query (only fires after first manual load, then re-fetches on key change)
-  const [searchKey, setSearchKey] = useState(null);
-  const { data: staffRows = [], isFetching } = useQuery({
-    queryKey: ["staff", searchKey],
+  const setWeeklyHours = (e) => {
+    const value = e.target.value;
+    setForm((f) => ({
+      ...f,
+      weeklyHours: value,
+      schedulePattern: value.trim() ? "" : f.schedulePattern,
+    }));
+  };
+
+  const setSchedulePattern = (e) => {
+    const value = e.target.value;
+    setForm((f) => ({
+      ...f,
+      schedulePattern: value,
+      weeklyHours: value.trim() ? "" : f.weeklyHours,
+    }));
+  };
+
+  // ── List query (load once and filter on client by name or id)
+  const { data: staffRows = [] } = useQuery({
+    queryKey: ["staff"],
     queryFn: () =>
       api
-        .get(
-          `/staff${searchKey ? `?search=${encodeURIComponent(searchKey)}` : ""}`,
-        )
-        .then((r) => normalizeList(r.data)),
-    enabled: searchKey !== null,
+        .get("/staff")
+        .then((r) =>
+          normalizeList(r.data).map((row) => normalizeStaffRowForTable(row)),
+        ),
   });
+
+  const keyword = search.trim().toLowerCase();
+  const filteredRows = keyword
+    ? staffRows.filter((row) => {
+        const idText = String(row.id ?? "").toLowerCase();
+        const nameText = String(row.name ?? "").toLowerCase();
+        return idText.includes(keyword) || nameText.includes(keyword);
+      })
+    : staffRows;
+
+  const filteredStaffById = new Map(
+    filteredRows.map((row) => [String(row.id ?? ""), row]),
+  );
+
+  const tableRows = filteredRows.map((row) => ({
+    ID: row.id ?? "",
+    Name: row.name ?? "",
+    // "Date of Birth": row.birthday ?? "",
+    // Gender: row.sex ?? "",
+    // Postcode: row.postCode ?? "",
+    Role: row.role ?? "",
+    "Std Rate": row.standardRate ?? "",
+    "OT Rate": row.overtimeRate ?? "",
+  }));
+
+  const pageCount = Math.max(1, Math.ceil(tableRows.length / rowsPerPage));
+  const start = (page - 1) * rowsPerPage;
+  const end = start + rowsPerPage;
+  const pagedTableRows = tableRows.slice(start, end);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
+
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
 
   // ── Save mutation
   const saveMutation = useMutation({
-    mutationFn: (payload) => api.post("/staff/save", payload),
+    mutationFn: async (payload) => {
+      const id = payload.id;
+
+      if (!id) {
+        return api.post("/staff/save", payload);
+      }
+
+      try {
+        // Keep compatibility with backend save endpoint.
+        return await api.post("/staff/save", payload);
+      } catch (err) {
+        const status = err?.response?.status;
+        const raw = err?.response?.data;
+        const detail =
+          typeof raw === "string"
+            ? raw
+            : JSON.stringify(raw || {}) + (err?.message || "");
+
+        // json-server rewrite handles POST as insert only. - FE Mock test only!!
+        if (status === 500 && /duplicate id|insert failed/i.test(detail)) {
+          return api.put(`/staff/${id}`, payload);
+        }
+
+        throw err;
+      }
+    },
     onSuccess: () => {
       showToast(editingId ? "Staff updated." : "Staff saved.");
       setForm(initialForm);
       setEditingId(null);
+      setIsDialogOpen(false);
       qc.invalidateQueries({ queryKey: ["staff"] });
     },
     onError: (err) => showToast(errMsg(err, "Failed to save staff"), true),
@@ -150,6 +286,9 @@ export default function StaffTab({ showToast }) {
 
   const startEdit = (row) => {
     const rowId = row.id ?? row.staffId ?? "";
+    const rowWeeklyHours = row.weeklyHours ?? row.weekly_hours;
+    const rowSchedulePattern =
+      row.schedulePattern ?? row.schedule_pattern ?? "";
     setEditingId(rowId || null);
     setForm({
       id: String(rowId || ""),
@@ -165,12 +304,25 @@ export default function StaffTab({ showToast }) {
       role: row.role ?? "",
       standardRate: String(row.standardRate ?? row.standard_rate ?? ""),
       overtimeRate: String(row.overtimeRate ?? row.overtime_rate ?? ""),
+      weeklyHours: rowWeeklyHours != null ? String(rowWeeklyHours) : "",
+      schedulePattern: rowSchedulePattern ? String(rowSchedulePattern) : "",
     });
+    setIsDialogOpen(true);
   };
 
   const resetForm = () => {
     setForm(initialForm);
     setEditingId(null);
+  };
+
+  const openCreateDialog = () => {
+    resetForm();
+    setIsDialogOpen(true);
+  };
+
+  const closeDialog = () => {
+    setIsDialogOpen(false);
+    resetForm();
   };
 
   const handleSubmit = (e) => {
@@ -193,6 +345,11 @@ export default function StaffTab({ showToast }) {
     const email = form.email.trim();
     const address = form.address.trim();
     const postCode = form.postCode.trim();
+    const weeklyHoursRaw = form.weeklyHours.trim();
+    const schedulePatternRaw = form.schedulePattern.trim();
+
+    const hasWeekly = weeklyHoursRaw !== "";
+    const hasPattern = schedulePatternRaw !== "";
 
     const payload = {
       ...(trimmedId ? { id: Number(trimmedId) } : {}),
@@ -207,6 +364,8 @@ export default function StaffTab({ showToast }) {
       ...(email ? { email } : {}),
       ...(address ? { address } : {}),
       ...(postCode ? { postCode } : {}),
+      weeklyHours: hasWeekly ? Number(weeklyHoursRaw) : null,
+      schedulePattern: hasPattern ? schedulePatternRaw : null,
     };
 
     saveMutation.mutate(payload);
@@ -215,201 +374,370 @@ export default function StaffTab({ showToast }) {
   return (
     <div>
       <PageHeader
-        title="Staff Setup"
-        description="Manage staff profiles, contracts, and pay rates."
+        title="Staff Administration"
+        description="Manage staff records."
       />
-      <TwoColumn>
-        <PanelCard
-          title={editingId ? "Edit Staff" : "Create or Update Staff"}
-          component="form"
-          onSubmit={handleSubmit}
+      <PanelCard>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 2,
+            mb: 1.5,
+            flexWrap: "wrap",
+          }}
         >
-          {/* Since the ID can’t be edited, I don’t think we need to show it when creating or updating. */}
-          {/* <Field label="ID">
-            <TextField
-              name="id"
-              value={form.id}
-              size="small"
-              fullWidth
-              disabled
-            />
-          </Field> */}
-          <Field label="Name">
-            <TextField
-              name="name"
-              type="text"
-              required
-              value={form.name}
-              onChange={set}
-              size="small"
-              fullWidth
-            />
-          </Field>
-          <Field label="Birthday">
-            <TextField
-              type="date"
-              name="birthday"
-              value={form.birthday}
-              onChange={set}
-              size="small"
-              fullWidth
-            />
-          </Field>
-          <Field label="Sex">
-            <TextField
-              select
-              name="sex"
-              value={form.sex}
-              onChange={set}
-              size="small"
-              fullWidth
-            >
-              <MenuItem value="">Select</MenuItem>
-              <MenuItem value="MALE">Male</MenuItem>
-              <MenuItem value="FEMALE">Female</MenuItem>
-              <MenuItem value="OTHER">Other</MenuItem>
-            </TextField>
-          </Field>
-          <Field label="Mobile Phone">
-            <TextField
-              name="mobilePhone"
-              value={form.mobilePhone}
-              onChange={set}
-              pattern="^\d{8,}$"
-              inputMode="numeric"
-              title="Please enter valid mobile phone number (e.g. 0412345678)"
-              size="small"
-              fullWidth
-            />
-          </Field>
-
-          <Field label="Email">
-            <TextField
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={set}
-              size="small"
-              fullWidth
-            />
-          </Field>
-
-          <Field label="Address">
-            <TextField
-              name="address"
-              value={form.address}
-              onChange={set}
-              size="small"
-              fullWidth
-            />
-          </Field>
-
-          <Field label="Post Code">
-            <TextField
-              name="postCode"
-              value={form.postCode}
-              onChange={set}
-              pattern="\d{4}"
-              inputMode="numeric"
-              title="Please enter a 4-digit post code (e.g. 5000)"
-              size="small"
-              fullWidth
-            />
-          </Field>
-          <Field label="Type of Contract">
-            <TextField
-              select
-              name="contractType"
-              required
-              value={form.contractType}
-              onChange={set}
-              size="small"
-              fullWidth
-            >
-              <MenuItem value="">Select</MenuItem>
-              <MenuItem value="CASUAL">Casual</MenuItem>
-              <MenuItem value="FULL_TIME">Full Time</MenuItem>
-              <MenuItem value="PART_TIME">Part Time</MenuItem>
-            </TextField>
-          </Field>
-          <Field label="Role">
-            <TextField
-              name="role"
-              type="text"
-              required
-              value={form.role}
-              onChange={set}
-              size="small"
-              fullWidth
-            />
-          </Field>
-          <Field label="Standard Rate">
-            <TextField
-              name="standardRate"
-              type="number"
-              min="0"
-              step="0.01"
-              value={form.standardRate}
-              onChange={set}
-              size="small"
-              fullWidth
-            />
-          </Field>
-          <Field label="Overtime Rate">
-            <TextField
-              name="overtimeRate"
-              type="number"
-              min="0"
-              step="0.01"
-              value={form.overtimeRate}
-              onChange={set}
-              size="small"
-              fullWidth
-            />
-          </Field>
-          <FormActions>
-            <PrimaryButton type="submit" disabled={saveMutation.isPending}>
-              {saveMutation.isPending
-                ? editingId
-                  ? "Updating..."
-                  : "Saving..."
-                : editingId
-                  ? "Update Staff"
-                  : "Save Staff"}
-            </PrimaryButton>
-
-            <GhostButton type="button" onClick={resetForm}>
-              {editingId ? "Cancel Edit" : "Clear"}
-            </GhostButton>
-          </FormActions>
-        </PanelCard>
-
-        <PanelCard title="Staff Directory">
-          <InlineFields>
-            <TextField
-              placeholder="Search by name or ID"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && setSearchKey(search)}
-              size="small"
-            />
-            <PrimaryButton
-              onClick={() => setSearchKey(search)}
-              disabled={isFetching}
-            >
-              {isFetching ? "Loading..." : "Refresh"}
-            </PrimaryButton>
-          </InlineFields>
-          <DataTable
-            rows={staffRows}
-            renderRowActions={(row) => (
-              <GhostButton type="button" onClick={() => startEdit(row)}>
-                Edit
-              </GhostButton>
-            )}
+          <TextField
+            placeholder="Search by name or ID"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            size="small"
+            sx={{ width: "260px" }}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            }}
           />
-        </PanelCard>
-      </TwoColumn>
+          <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+            <Button
+              type="button"
+              variant="contained"
+              color="primary"
+              startIcon={<AddIcon />}
+              onClick={openCreateDialog}
+              sx={{ textTransform: "none" }}
+            >
+              Create a New Record
+            </Button>
+          </Box>
+        </Box>
+        <DataTable
+          rows={pagedTableRows}
+          actionsHeader=""
+          renderRowActions={(tableRow) => (
+            <GhostButton
+              type="button"
+              onClick={() => {
+                const selected = filteredStaffById.get(
+                  String(tableRow.ID ?? ""),
+                );
+                if (selected) startEdit(selected);
+              }}
+            >
+              Edit
+            </GhostButton>
+          )}
+        />
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+          <Pagination
+            count={pageCount}
+            page={page}
+            onChange={(_, value) => setPage(value)}
+            color="primary"
+            shape="rounded"
+          />
+        </Box>
+      </PanelCard>
+
+      <Dialog open={isDialogOpen} onClose={closeDialog} fullWidth maxWidth="md">
+        <DialogTitle>
+          {editingId ? "Edit Staff Record" : "Create Staff Record"}
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box component="form" id="staff-record-form" onSubmit={handleSubmit}>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  md: "repeat(2, minmax(0, 1fr))",
+                },
+                gap: 2,
+              }}
+            >
+              <Field label="Staff ID">
+                <TextField
+                  name="id"
+                  value={editingId ? form.id : ""}
+                  size="small"
+                  fullWidth
+                  placeholder={
+                    editingId ? "" : "Will be auto-assigned by the system"
+                  }
+                  disabled
+                  InputProps={{
+                    readOnly: true,
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LockIcon fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }}
+                  helperText={
+                    editingId
+                      ? "Staff ID is locked and cannot be changed."
+                      : "Staff ID is assigned automatically when you save a new record."
+                  }
+                />
+              </Field>
+              <Field label="Name">
+                <TextField
+                  name="name"
+                  type="text"
+                  required
+                  value={form.name}
+                  onChange={set}
+                  size="small"
+                  fullWidth
+                />
+              </Field>
+
+              <Field label="Type of Contract">
+                <TextField
+                  select
+                  name="contractType"
+                  required
+                  value={form.contractType}
+                  onChange={set}
+                  size="small"
+                  fullWidth
+                >
+                  <MenuItem value="CASUAL">Casual</MenuItem>
+                  <MenuItem value="FULL_TIME">Full Time</MenuItem>
+                  <MenuItem value="PART_TIME">Part Time</MenuItem>
+                </TextField>
+              </Field>
+              <Field label="Role">
+                <TextField
+                  name="role"
+                  type="text"
+                  required
+                  value={form.role}
+                  onChange={set}
+                  size="small"
+                  fullWidth
+                  placeholder="e.g. Supervisor"
+                />
+              </Field>
+            </Box>
+            <Box
+              sx={{
+                borderTop: "1px solid",
+                borderColor: "divider",
+                mt: 2,
+                pt: 2,
+              }}
+            >
+              <Typography variant="subtitle2" sx={{ mb: 0.5, fontWeight: 600 }}>
+                Pay Rates
+              </Typography>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: {
+                    xs: "1fr",
+                    md: "repeat(2, minmax(0, 1fr))",
+                  },
+                  gap: 2,
+                }}
+              >
+                <Field label="Standard Rate">
+                  <TextField
+                    name="standardRate"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.standardRate}
+                    onChange={set}
+                    size="small"
+                    fullWidth
+                  />
+                </Field>
+                <Field label="Overtime Rate">
+                  <TextField
+                    name="overtimeRate"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.overtimeRate}
+                    onChange={set}
+                    size="small"
+                    fullWidth
+                  />
+                </Field>
+              </Box>
+            </Box>
+
+            <Box
+              sx={{
+                borderTop: "1px solid",
+                borderColor: "divider",
+                mt: 2,
+                pt: 2,
+              }}
+            >
+              <Typography
+                variant="subtitle2"
+                sx={{ mb: 0.75, fontWeight: 600 }}
+              >
+                Standard Hours
+              </Typography>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: {
+                    xs: "1fr",
+                    md: "repeat(2, minmax(0, 1fr))",
+                  },
+                  gap: 2,
+                }}
+              >
+                <Field label="Weekly Total Hours">
+                  <TextField
+                    name="weeklyHours"
+                    type="number"
+                    value={form.weeklyHours}
+                    onChange={setWeeklyHours}
+                    size="small"
+                    fullWidth
+                    inputProps={{ min: 0, step: 0.1 }}
+                    helperText="Provide this OR schedule pattern. Default is 38 hrs/week."
+                  />
+                </Field>
+                <Field label="Schedule Pattern">
+                  <TextField
+                    name="schedulePattern"
+                    value={form.schedulePattern}
+                    onChange={setSchedulePattern}
+                    size="small"
+                    fullWidth
+                    placeholder="e.g. Mon-Fri 9-5"
+                    helperText="Provide this OR weekly hours"
+                  />
+                </Field>
+              </Box>
+            </Box>
+
+            {/*
+            <Box
+              sx={{
+                borderTop: "1px solid",
+                borderColor: "divider",
+                mt: 2,
+                pt: 2,
+              }}
+            >
+              <Typography variant="subtitle2" sx={{ mb: 0.5, fontWeight: 600 }}>
+                Optional Details
+              </Typography>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: {
+                    xs: "1fr",
+                    md: "repeat(2, minmax(0, 1fr))",
+                  },
+                  gap: 2,
+                }}
+              >
+                <Field label="Birthday">
+                  <TextField
+                    type="date"
+                    name="birthday"
+                    value={form.birthday}
+                    onChange={set}
+                    size="small"
+                    fullWidth
+                  />
+                </Field>
+                <Field label="Sex">
+                  <TextField
+                    select
+                    name="sex"
+                    value={form.sex}
+                    onChange={set}
+                    size="small"
+                    fullWidth
+                  >
+                    <MenuItem value="">Select</MenuItem>
+                    <MenuItem value="Male">Male</MenuItem>
+                    <MenuItem value="Female">Female</MenuItem>
+                    <MenuItem value="Other">Other</MenuItem>
+                  </TextField>
+                </Field>
+
+                <Field label="Mobile Phone">
+                  <TextField
+                    name="mobilePhone"
+                    value={form.mobilePhone}
+                    onChange={set}
+                    pattern="^\d{8,}$"
+                    inputMode="numeric"
+                    title="Please enter valid mobile phone number (e.g. 0412345678)"
+                    size="small"
+                    fullWidth
+                  />
+                </Field>
+                <Field label="Email">
+                  <TextField
+                    name="email"
+                    type="email"
+                    value={form.email}
+                    onChange={set}
+                    size="small"
+                    fullWidth
+                  />
+                </Field>
+
+                <Field label="Post Code">
+                  <TextField
+                    name="postCode"
+                    value={form.postCode}
+                    onChange={set}
+                    pattern="\d{4}"
+                    inputMode="numeric"
+                    title="Please enter a 4-digit post code (e.g. 5000)"
+                    size="small"
+                    fullWidth
+                  />
+                </Field>
+                <Field label="Address">
+                  <TextField
+                    name="address"
+                    value={form.address}
+                    onChange={set}
+                    size="small"
+                    fullWidth
+                  />
+                </Field>
+              </Box>
+            </Box>
+            */}
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <GhostButton type="button" onClick={closeDialog}>
+            Cancel
+          </GhostButton>
+          <PrimaryButton
+            type="submit"
+            form="staff-record-form"
+            disabled={saveMutation.isPending}
+          >
+            {saveMutation.isPending
+              ? editingId
+                ? "Updating..."
+                : "Saving..."
+              : editingId
+                ? "Update Staff"
+                : "Save Staff"}
+          </PrimaryButton>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }

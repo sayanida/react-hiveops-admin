@@ -10,6 +10,7 @@ Admin.jsx
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Box, Grid } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 import useToast from "../hooks/useToast.js";
 import Toast from "../components/common/Toast.jsx";
 import AdminTopbar from "../components/admin/AdminTopbar.jsx";
@@ -22,7 +23,6 @@ import StationsTab from "../tabs/StationsTab.jsx";
 import ClockingTab from "../tabs/ClockingTab.jsx";
 import RegistrationsTab from "../tabs/RegistrationsTab.jsx";
 import ReportsTab from "../tabs/ReportsTab.jsx";
-import PayslipsTab from "../tabs/PayslipsTab.jsx";
 import ExceptionsTab from "../tabs/ExceptionsTab.jsx";
 
 export { api };
@@ -46,17 +46,21 @@ const TABS = [
     Component: RegistrationsTab,
   },
   { id: "reports", label: "Reports", Component: ReportsTab },
-  { id: "payslips", label: "Pay Slips", Component: PayslipsTab },
   { id: "exceptions", label: "Exception Reports", Component: ExceptionsTab },
 ];
 
 // ─── Root App ─────────────────────────────────────────────────────────────────
 function AdminApp() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("staff");
   const [apiBase, setApiBase] = useState(
     () => localStorage.getItem("timeclock_api_base") || "",
   );
   const { toast, showToast } = useToast();
+
+  const handleLogout = () => {
+    navigate("/", { replace: true });
+  };
 
   const ActiveComponent = TABS.find((t) => t.id === activeTab)?.Component;
 
@@ -80,20 +84,30 @@ function AdminApp() {
       />
 
       <Box
-        sx={{ position: "relative", zIndex: 1, px: { xs: 2, md: 5 }, py: 4 }}
+        sx={{
+          position: "relative",
+          zIndex: 1,
+          px: { xs: 2, md: 5 },
+          pt: 0,
+          pb: 4,
+          mt: 3,
+        }}
       >
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 3 }}>
-            <AdminSidebar
-              tabs={TABS}
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            />
+        <Box sx={{ width: "100%", maxWidth: "1400px", mx: "auto" }}>
+          <Grid container spacing={3}>
+            <Grid size={{ xs: 12, md: 2.5 }}>
+              <AdminSidebar
+                tabs={TABS}
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                onLogout={handleLogout}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 9.5 }}>
+              {ActiveComponent && <ActiveComponent showToast={showToast} />}
+            </Grid>
           </Grid>
-          <Grid size={{ xs: 12, md: 9 }}>
-            {ActiveComponent && <ActiveComponent showToast={showToast} />}
-          </Grid>
-        </Grid>
+        </Box>
       </Box>
 
       <Toast toast={toast} />

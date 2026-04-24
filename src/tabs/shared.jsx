@@ -85,16 +85,19 @@ export function DataTable({
           </TableRow>
         </TableHead>
         <TableBody>
-          {rows.map((row, i) => (
-            <TableRow key={i} hover>
-              {headers.map((h) => (
-                <TableCell key={h}>{row[h] ?? ""}</TableCell>
-              ))}
-              {hasActions ? (
-                <TableCell align="right">{renderRowActions(row, i)}</TableCell>
-              ) : null}
-            </TableRow>
-          ))}
+          {rows.map((row, i) => {
+            const rowKey = String(row.id ?? row.ID ?? row._id ?? i);
+            return (
+              <TableRow key={rowKey} hover>
+                {headers.map((h) => (
+                  <TableCell key={h}>{row[h] ?? ""}</TableCell>
+                ))}
+                {hasActions ? (
+                  <TableCell align="right">{renderRowActions(row)}</TableCell>
+                ) : null}
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </TableContainer>
@@ -224,7 +227,12 @@ export function PrimaryButton({ children, ...props }) {
 
 export function GhostButton({ children, ...props }) {
   return (
-    <Button variant="outlined" color="inherit" {...props}>
+    <Button
+      sx={{ textTransform: "none" }}
+      variant="outlined"
+      color="inherit"
+      {...props}
+    >
       {children}
     </Button>
   );

@@ -2,17 +2,19 @@
   "staff": [
     {
       "id": 1,
-      "name": "John Smith",
+      "name": "John John",
+      "role": "Supervisor",
+      "contractType": "FULL_TIME",
+      "standardRate": 25.5,
+      "overtimeRate": 38.25,
       "birthday": "1990-01-01",
-      "sex": "Male",
-      "mobile_phone": "0400000000",
+      "sex": "MALE",
+      "mobilePhone": "0400000000",
       "email": "john@example.com",
       "address": "1 King St",
-      "post_code": "5000",
-      "contract_type": "Full Time",
-      "role": "Supervisor",
-      "standard_rate": 25.5,
-      "overtime_rate": 38.25
+      "postCode": "5000",
+      "weeklyHours": null,
+      "schedulePattern": "Mon-Fri 9am-5pm"
     }
   ]
 }
