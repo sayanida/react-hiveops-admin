@@ -1,9 +1,9 @@
-# Azure DevOps pipeline: build Vite + React (bee-web) và deploy lên Azure App Service
+# Azure DevOps pipeline: build Vite + React (bee-web) and deploy to Azure App Service
 # Branch: master | App Service: devopsgroup1frontend
 # Service connection: AzureConnection-DevOpsGroup1-frontend
 #
-# Trước khi chạy: trong Project Settings → Service connections, tạo/kết nối
-# "AzureConnection-DevOpsGroup1-frontend" với quyền deploy tới resource group chứa app.
+# Before running: in Project Settings -> Service connections, create/connect
+# "AzureConnection-DevOpsGroup1-frontend" with deploy permission to the app's resource group.
 
 trigger:
   branches:
@@ -20,10 +20,10 @@ steps:
   - checkout: self
     displayName: Checkout bee-web
 
-  - task: NodeTool@0
+  - task: UseNode@1
     displayName: Use Node.js $(nodeVersion)
     inputs:
-      versionSpec: $(nodeVersion)
+      version: $(nodeVersion)
 
   - script: npm ci
     displayName: npm ci
@@ -32,7 +32,7 @@ steps:
     displayName: npm run build
 
   - task: ArchiveFiles@2
-    displayName: Zip thư mục dist
+    displayName: Zip dist folder
     inputs:
       rootFolderOrFile: '$(System.DefaultWorkingDirectory)/dist'
       includeRootFolder: false
@@ -41,12 +41,12 @@ steps:
       replaceExistingArchive: true
 
   - task: AzureWebApp@1
-    displayName: Deploy lên Azure App Service
+    displayName: Deploy to Azure App Service
     inputs:
       azureSubscription: 'AzureConnection-DevOpsGroup1-frontend'
       appType: webAppLinux
       appName: 'devopsgroup1frontend'
       package: '$(Build.ArtifactStagingDirectory)/app.zip'
       runtimeStack: 'NODE|20-lts'
-      # SPA tĩnh: zip vào wwwroot, serve lắng nghe $PORT (App Service Linux)
+      # Static SPA: zip into wwwroot, serve listening on $PORT (App Service Linux)
       startUpCommand: 'npx --yes serve@14 -s /home/site/wwwroot -l $PORT'
