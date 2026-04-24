@@ -54,9 +54,9 @@ const SEX_TO_API = {
   Male: "MALE",
   Female: "FEMALE",
   Other: "OTHER",
-  MALE: "MALE",
-  FEMALE: "FEMALE",
-  OTHER: "OTHER",
+  MALE: "Male",
+  FEMALE: "Female",
+  OTHER: "Other",
 };
 
 const CONTRACT_TO_API = {
@@ -72,9 +72,9 @@ const SEX_TO_FORM = {
   MALE: "Male",
   FEMALE: "Female",
   OTHER: "Other",
-  Male: "Male",
-  Female: "Female",
-  Other: "Other",
+  Male: "MALE",
+  Female: "FEMALE",
+  Other: "OTHER",
 };
 
 const CONTRACT_TO_FORM = {
@@ -106,15 +106,23 @@ function normalizeStaffRowForTable(row) {
 }
 
 function validateStaffForm(values) {
-  if (!values.name.trim()) return "Name is required.";
-  if (!values.contractType) return "Please select a contract type.";
-  if (!values.role.trim()) return "Role is required.";
+  const errors = {};
+
+  if (!values.name.trim()) {
+    errors.name = "Name is required.";
+  }
+  if (!values.contractType) {
+    errors.contractType = "Please select a contract type.";
+  }
+  if (!values.role.trim()) {
+    errors.role = "Role is required.";
+  }
 
   if (values.standardRate.trim() === "") {
-    return "Standard rate is required.";
+    errors.standardRate = "Standard rate is required.";
   }
   if (values.overtimeRate.trim() === "") {
-    return "Overtime rate is required.";
+    errors.overtimeRate = "Overtime rate is required.";
   }
 
   // if (values.email && !EMAIL_RE.test(values.email.trim())) {
@@ -142,9 +150,10 @@ function validateStaffForm(values) {
   // }
 
   for (const key of ["standardRate", "overtimeRate"]) {
+    if (values[key].trim() === "") continue;
     const num = Number(values[key]);
     if (Number.isNaN(num) || num < 0) {
-      return "Hourly rate must be a number greater than or equal to 0.";
+      errors[key] = "Must be a number greater than or equal to 0.";
     }
   }
 
@@ -152,20 +161,23 @@ function validateStaffForm(values) {
   const hasPattern = values.schedulePattern.trim() !== "";
 
   if (hasWeekly && hasPattern) {
-    return "Provide exactly one of weekly hours or schedule pattern.";
+    errors.weeklyHours = "Provide either weekly hours OR schedule pattern.";
+    errors.schedulePattern = "Provide either schedule pattern OR weekly hours.";
   }
   if (!hasWeekly && !hasPattern) {
-    return "Either weekly hours or schedule pattern is required.";
+    errors.weeklyHours = "Either weekly hours or schedule pattern is required.";
+    errors.schedulePattern =
+      "Either weekly hours or schedule pattern is required.";
   }
 
   if (hasWeekly) {
     const weeklyHours = Number(values.weeklyHours);
     if (Number.isNaN(weeklyHours) || weeklyHours <= 0) {
-      return "Weekly hours must be a number greater than 0.";
+      errors.weeklyHours = "Weekly hours must be a number greater than 0.";
     }
   }
 
-  return "";
+  return errors;
 }
 
 export default function StaffTab({ showToast }) {
@@ -174,28 +186,44 @@ export default function StaffTab({ showToast }) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [form, setForm] = useState(initialForm);
+  const [fieldErrors, setFieldErrors] = useState({});
   const [editingId, setEditingId] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const set = (e) =>
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+  const handleFieldChange = (e) => {
+    const { name, value } = e.target;
 
-  const setWeeklyHours = (e) => {
-    const value = e.target.value;
-    setForm((f) => ({
-      ...f,
-      weeklyHours: value,
-      schedulePattern: value.trim() ? "" : f.schedulePattern,
-    }));
-  };
+    setForm((f) => {
+      if (name === "weeklyHours") {
+        return {
+          ...f,
+          weeklyHours: value,
+          schedulePattern: value.trim() ? "" : f.schedulePattern,
+        };
+      }
 
-  const setSchedulePattern = (e) => {
-    const value = e.target.value;
-    setForm((f) => ({
-      ...f,
-      schedulePattern: value,
-      weeklyHours: value.trim() ? "" : f.weeklyHours,
-    }));
+      if (name === "schedulePattern") {
+        return {
+          ...f,
+          schedulePattern: value,
+          weeklyHours: value.trim() ? "" : f.weeklyHours,
+        };
+      }
+
+      return { ...f, [name]: value };
+    });
+
+    setFieldErrors((prev) => {
+      if (!prev[name] && name !== "weeklyHours" && name !== "schedulePattern") {
+        return prev;
+      }
+
+      const next = { ...prev };
+      delete next[name];
+      if (name === "weeklyHours") delete next.schedulePattern;
+      if (name === "schedulePattern") delete next.weeklyHours;
+      return next;
+    });
   };
 
   // ── List query (load once and filter on client by name or id)
@@ -277,6 +305,7 @@ export default function StaffTab({ showToast }) {
     onSuccess: () => {
       showToast(editingId ? "Staff updated." : "Staff saved.");
       setForm(initialForm);
+      setFieldErrors({});
       setEditingId(null);
       setIsDialogOpen(false);
       qc.invalidateQueries({ queryKey: ["staff"] });
@@ -290,6 +319,7 @@ export default function StaffTab({ showToast }) {
     const rowSchedulePattern =
       row.schedulePattern ?? row.schedule_pattern ?? "";
     setEditingId(rowId || null);
+    setFieldErrors({});
     setForm({
       id: String(rowId || ""),
       name: row.name ?? "",
@@ -312,6 +342,7 @@ export default function StaffTab({ showToast }) {
 
   const resetForm = () => {
     setForm(initialForm);
+    setFieldErrors({});
     setEditingId(null);
   };
 
@@ -327,9 +358,11 @@ export default function StaffTab({ showToast }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const validationError = validateStaffForm(form);
-    if (validationError) {
-      showToast(validationError, true);
+    const validationErrors = validateStaffForm(form);
+    setFieldErrors(validationErrors);
+    const firstError = Object.values(validationErrors)[0];
+    if (firstError) {
+      showToast(firstError, true);
       return;
     }
 
@@ -448,7 +481,12 @@ export default function StaffTab({ showToast }) {
           {editingId ? "Edit Staff Record" : "Create Staff Record"}
         </DialogTitle>
         <DialogContent dividers>
-          <Box component="form" id="staff-record-form" onSubmit={handleSubmit}>
+          <Box
+            component="form"
+            id="staff-record-form"
+            onSubmit={handleSubmit}
+            noValidate
+          >
             <Box
               sx={{
                 display: "grid",
@@ -488,11 +526,12 @@ export default function StaffTab({ showToast }) {
                 <TextField
                   name="name"
                   type="text"
-                  required
                   value={form.name}
-                  onChange={set}
+                  onChange={handleFieldChange}
                   size="small"
                   fullWidth
+                  error={Boolean(fieldErrors.name)}
+                  helperText={fieldErrors.name || " "}
                 />
               </Field>
 
@@ -500,11 +539,12 @@ export default function StaffTab({ showToast }) {
                 <TextField
                   select
                   name="contractType"
-                  required
                   value={form.contractType}
-                  onChange={set}
+                  onChange={handleFieldChange}
                   size="small"
                   fullWidth
+                  error={Boolean(fieldErrors.contractType)}
+                  helperText={fieldErrors.contractType || " "}
                 >
                   <MenuItem value="CASUAL">Casual</MenuItem>
                   <MenuItem value="FULL_TIME">Full Time</MenuItem>
@@ -515,12 +555,13 @@ export default function StaffTab({ showToast }) {
                 <TextField
                   name="role"
                   type="text"
-                  required
                   value={form.role}
-                  onChange={set}
+                  onChange={handleFieldChange}
                   size="small"
                   fullWidth
                   placeholder="e.g. Supervisor"
+                  error={Boolean(fieldErrors.role)}
+                  helperText={fieldErrors.role || " "}
                 />
               </Field>
             </Box>
@@ -552,9 +593,11 @@ export default function StaffTab({ showToast }) {
                     min="0"
                     step="0.01"
                     value={form.standardRate}
-                    onChange={set}
+                    onChange={handleFieldChange}
                     size="small"
                     fullWidth
+                    error={Boolean(fieldErrors.standardRate)}
+                    helperText={fieldErrors.standardRate || " "}
                   />
                 </Field>
                 <Field label="Overtime Rate">
@@ -564,9 +607,11 @@ export default function StaffTab({ showToast }) {
                     min="0"
                     step="0.01"
                     value={form.overtimeRate}
-                    onChange={set}
+                    onChange={handleFieldChange}
                     size="small"
                     fullWidth
+                    error={Boolean(fieldErrors.overtimeRate)}
+                    helperText={fieldErrors.overtimeRate || " "}
                   />
                 </Field>
               </Box>
@@ -601,22 +646,30 @@ export default function StaffTab({ showToast }) {
                     name="weeklyHours"
                     type="number"
                     value={form.weeklyHours}
-                    onChange={setWeeklyHours}
+                    onChange={handleFieldChange}
                     size="small"
                     fullWidth
                     inputProps={{ min: 0, step: 0.1 }}
-                    helperText="Provide this OR schedule pattern. Default is 38 hrs/week."
+                    error={Boolean(fieldErrors.weeklyHours)}
+                    helperText={
+                      fieldErrors.weeklyHours ||
+                      "Provide this OR schedule pattern"
+                    }
                   />
                 </Field>
                 <Field label="Schedule Pattern">
                   <TextField
                     name="schedulePattern"
                     value={form.schedulePattern}
-                    onChange={setSchedulePattern}
+                    onChange={handleFieldChange}
                     size="small"
                     fullWidth
                     placeholder="e.g. Mon-Fri 9-5"
-                    helperText="Provide this OR weekly hours"
+                    error={Boolean(fieldErrors.schedulePattern)}
+                    helperText={
+                      fieldErrors.schedulePattern ||
+                      "Provide this OR weekly hours"
+                    }
                   />
                 </Field>
               </Box>
