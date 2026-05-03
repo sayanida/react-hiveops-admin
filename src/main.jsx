@@ -15,6 +15,18 @@ import { ThemeProvider, CssBaseline } from "@mui/material";
 import Admin from "./pages/Admin.jsx";
 import Staff from "./pages/Staff.jsx";
 import theme from "./theme.js";
+import {
+  ensureDefaultMockAdminSession,
+  getFirstVisiblePortal,
+  getUiCurrentRole,
+} from "./access/uiRoleNavigation.js";
+
+ensureDefaultMockAdminSession();
+
+function LandingRedirect() {
+  const portal = getFirstVisiblePortal(getUiCurrentRole());
+  return <Navigate to={`/${portal}`} replace />;
+}
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -22,7 +34,7 @@ createRoot(document.getElementById("root")).render(
       <CssBaseline />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Navigate to="/staff" replace />} />
+          <Route path="/" element={<LandingRedirect />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/staff" element={<Staff />} />
           <Route path="*" element={<div>Page Not Found</div>} />

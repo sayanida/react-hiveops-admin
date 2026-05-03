@@ -6,7 +6,7 @@
 	•	Props: array of tabs, current active tab ID, tab switch function
 */
 
-import { Button, Divider, Paper, Stack } from "@mui/material";
+import { Button, Divider, Paper, Stack, Typography } from "@mui/material";
 
 export default function AdminSidebar({
   tabs,
@@ -28,6 +28,12 @@ export default function AdminSidebar({
       }}
     >
       <Stack spacing={1} sx={{ minHeight: "100%" }}>
+        {tabs.length === 0 ? (
+          <Typography variant="body2" color="text.secondary" sx={{ py: 1 }}>
+            No Admin Portal sections are visible for this role.
+          </Typography>
+        ) : null}
+
         {tabs.map((t) => {
           const isActive = activeTab === t.id;
           return (
@@ -48,7 +54,7 @@ export default function AdminSidebar({
           );
         })}
 
-        <Divider sx={{ my: 0.5 }} />
+        <Divider sx={{ my: 0.5, mt: "auto" }} />
         <Button
           variant="text"
           color="inherit"

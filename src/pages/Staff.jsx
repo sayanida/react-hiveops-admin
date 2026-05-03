@@ -32,6 +32,7 @@ function StaffApp() {
   const [apiBase, setApiBase] = useState(
     () => localStorage.getItem("farm_staff_api_base") || "",
   );
+  const [isStaffSessionActive, setIsStaffSessionActive] = useState(false);
   const { toast, showToast } = useToast();
 
   return (
@@ -51,9 +52,14 @@ function StaffApp() {
         apiBase={apiBase}
         setApiBase={setApiBase}
         showToast={showToast}
+        showUserIdentity={isStaffSessionActive}
       />
 
-      <StaffDashboard showToast={showToast} />
+      <StaffDashboard
+        showToast={showToast}
+        onSessionStart={() => setIsStaffSessionActive(true)}
+        onSessionEnd={() => setIsStaffSessionActive(false)}
+      />
 
       <Toast toast={toast} />
     </Box>
