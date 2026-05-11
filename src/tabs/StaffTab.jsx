@@ -86,6 +86,17 @@ const CONTRACT_TO_FORM = {
   "Part Time": "PART_TIME",
 };
 
+const ROLE_LABELS = {
+  OFFICE_ADMIN: "Office Admin",
+  MANAGER: "Manager",
+  ROSTER_ADMIN: "Roster Admin",
+  WORKER: "Worker",
+};
+
+function getRoleLabel(role) {
+  return ROLE_LABELS[role] ?? role ?? "";
+}
+
 function normalizeStaffRowForTable(row) {
   return {
     id: row.id ?? row.staffId ?? "",
@@ -256,7 +267,7 @@ export default function StaffTab({ showToast }) {
     // "Date of Birth": row.birthday ?? "",
     // Gender: row.sex ?? "",
     // Postcode: row.postCode ?? "",
-    Role: row.role ?? "",
+    Role: getRoleLabel(row.role),
     "Std Rate": row.standardRate ?? "",
     "OT Rate": row.overtimeRate ?? "",
   }));
@@ -553,16 +564,21 @@ export default function StaffTab({ showToast }) {
               </Field>
               <Field label="Role">
                 <TextField
+                  select
                   name="role"
-                  type="text"
                   value={form.role}
                   onChange={handleFieldChange}
                   size="small"
                   fullWidth
-                  placeholder="e.g. Supervisor"
                   error={Boolean(fieldErrors.role)}
                   helperText={fieldErrors.role || " "}
-                />
+                >
+                  <MenuItem value="">Select role</MenuItem>
+                  <MenuItem value="OFFICE_ADMIN">Office Admin</MenuItem>
+                  <MenuItem value="MANAGER">Manager</MenuItem>
+                  <MenuItem value="ROSTER_ADMIN">Roster Admin</MenuItem>
+                  <MenuItem value="WORKER">Worker</MenuItem>
+                </TextField>
               </Field>
             </Box>
             <Box
