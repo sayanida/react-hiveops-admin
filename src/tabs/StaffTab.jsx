@@ -3,10 +3,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Box,
   Button,
+  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
   InputAdornment,
   MenuItem,
   Pagination,
@@ -39,11 +41,17 @@ const initialForm = {
   postCode: "",
   contractType: "",
   role: "",
+  createSystemAccount: true,
+  accountEmail: "",
+  accountPassword: "",
+  confirmAccountPassword: "",
   standardRate: "",
   overtimeRate: "",
   weeklyHours: "38",
   schedulePattern: "",
 };
+
+const ACCOUNT_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // const MOBILE_RE = /^\d{8,}$/;
@@ -88,9 +96,18 @@ const CONTRACT_TO_FORM = {
 
 const ROLE_LABELS = {
   OFFICE_ADMIN: "Office Admin",
-  MANAGER: "Manager",
+  MANAGER: "Manager/Supervisor",
+  SUPERVISOR: "Manager/Supervisor",
   ROSTER_ADMIN: "Roster Admin",
   WORKER: "Worker",
+};
+
+const ROLE_TO_FORM = {
+  OFFICE_ADMIN: "OFFICE_ADMIN",
+  ROSTER_ADMIN: "ROSTER_ADMIN",
+  MANAGER: "MANAGER",
+  SUPERVISOR: "MANAGER",
+  WORKER: "WORKER",
 };
 
 function getRoleLabel(role) {
@@ -127,6 +144,30 @@ function validateStaffForm(values) {
   }
   if (!values.role.trim()) {
     errors.role = "Role is required.";
+  }
+
+  if (values.createSystemAccount) {
+    if (!values.accountEmail.trim()) {
+      errors.accountEmail = "Account email is required.";
+    } else if (!ACCOUNT_EMAIL_RE.test(values.accountEmail.trim())) {
+      errors.accountEmail = "Enter a valid account email address.";
+    }
+
+    if (!values.id && !values.accountPassword.trim()) {
+      errors.accountPassword = "Password is required for new accounts.";
+    }
+
+    if (
+      values.accountPassword.trim() ||
+      values.confirmAccountPassword.trim() ||
+      !values.id
+    ) {
+      if (!values.confirmAccountPassword.trim()) {
+        errors.confirmAccountPassword = "Please confirm the password.";
+      } else if (values.accountPassword !== values.confirmAccountPassword) {
+        errors.confirmAccountPassword = "Passwords do not match.";
+      }
+    }
   }
 
   if (values.standardRate.trim() === "") {
@@ -202,26 +243,36 @@ export default function StaffTab({ showToast }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleFieldChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
+    const nextValue = type === "checkbox" ? checked : value;
 
     setForm((f) => {
       if (name === "weeklyHours") {
         return {
           ...f,
-          weeklyHours: value,
-          schedulePattern: value.trim() ? "" : f.schedulePattern,
+          weeklyHours: nextValue,
+          schedulePattern: String(nextValue).trim() ? "" : f.schedulePattern,
         };
       }
 
       if (name === "schedulePattern") {
         return {
           ...f,
-          schedulePattern: value,
-          weeklyHours: value.trim() ? "" : f.weeklyHours,
+          schedulePattern: nextValue,
+          weeklyHours: String(nextValue).trim() ? "" : f.weeklyHours,
         };
       }
 
-      return { ...f, [name]: value };
+      if (name === "createSystemAccount") {
+        return {
+          ...f,
+          createSystemAccount: Boolean(nextValue),
+          accountPassword: "",
+          confirmAccountPassword: "",
+        };
+      }
+
+      return { ...f, [name]: nextValue };
     });
 
     setFieldErrors((prev) => {
@@ -342,7 +393,29 @@ export default function StaffTab({ showToast }) {
       postCode: row.postCode ?? row.post_code ?? "",
       contractType:
         CONTRACT_TO_FORM[row.contractType ?? row.contract_type] ?? "",
-      role: row.role ?? "",
+      role: ROLE_TO_FORM[row.role] ?? row.role ?? "",
+      createSystemAccount: Boolean(
+        row.accountEmail ??
+        row.accountUserName ??
+        row.accountUsername ??
+        row.loginEmail ??
+        row.login_email ??
+        row.email ??
+        row.userName ??
+        row.username,
+      ),
+      accountEmail:
+        row.accountEmail ??
+        row.accountUserName ??
+        row.accountUsername ??
+        row.loginEmail ??
+        row.login_email ??
+        row.email ??
+        row.userName ??
+        row.username ??
+        "",
+      accountPassword: "",
+      confirmAccountPassword: "",
       standardRate: String(row.standardRate ?? row.standard_rate ?? ""),
       overtimeRate: String(row.overtimeRate ?? row.overtime_rate ?? ""),
       weeklyHours: rowWeeklyHours != null ? String(rowWeeklyHours) : "",
@@ -391,6 +464,8 @@ export default function StaffTab({ showToast }) {
     const postCode = form.postCode.trim();
     const weeklyHoursRaw = form.weeklyHours.trim();
     const schedulePatternRaw = form.schedulePattern.trim();
+    const accountEmail = form.accountEmail.trim();
+    const accountPassword = form.accountPassword.trim();
 
     const hasWeekly = weeklyHoursRaw !== "";
     const hasPattern = schedulePatternRaw !== "";
@@ -408,6 +483,17 @@ export default function StaffTab({ showToast }) {
       ...(email ? { email } : {}),
       ...(address ? { address } : {}),
       ...(postCode ? { postCode } : {}),
+      ...(form.createSystemAccount
+        ? {
+            createSystemAccount: true,
+            accountEmail,
+            ...(accountPassword ? { accountPassword } : {}),
+            systemAccount: {
+              email: accountEmail,
+              ...(accountPassword ? { password: accountPassword } : {}),
+            },
+          }
+        : {}),
       weeklyHours: hasWeekly ? Number(weeklyHoursRaw) : null,
       schedulePattern: hasPattern ? schedulePatternRaw : null,
     };
@@ -575,11 +661,90 @@ export default function StaffTab({ showToast }) {
                 >
                   <MenuItem value="">Select role</MenuItem>
                   <MenuItem value="OFFICE_ADMIN">Office Admin</MenuItem>
-                  <MenuItem value="MANAGER">Manager</MenuItem>
+                  <MenuItem value="MANAGER">Manager/Supervisor</MenuItem>
                   <MenuItem value="ROSTER_ADMIN">Roster Admin</MenuItem>
                   <MenuItem value="WORKER">Worker</MenuItem>
                 </TextField>
               </Field>
+            </Box>
+
+            <Box
+              sx={{
+                borderTop: "1px solid",
+                borderColor: "divider",
+                mt: 2,
+                pt: 2,
+              }}
+            >
+              <Typography variant="subtitle2" sx={{ mb: 0.5, fontWeight: 600 }}>
+                System Account
+              </Typography>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    name="createSystemAccount"
+                    checked={Boolean(form.createSystemAccount)}
+                    onChange={handleFieldChange}
+                  />
+                }
+                label="Create/maintain system account for this staff member"
+              />
+
+              {form.createSystemAccount ? (
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: {
+                      xs: "1fr",
+                      md: "repeat(2, minmax(0, 1fr))",
+                    },
+                    gap: 2,
+                    mt: 0.5,
+                  }}
+                >
+                  <Field label="Account Email">
+                    <TextField
+                      name="accountEmail"
+                      type="email"
+                      value={form.accountEmail}
+                      onChange={handleFieldChange}
+                      size="small"
+                      fullWidth
+                      error={Boolean(fieldErrors.accountEmail)}
+                      helperText={fieldErrors.accountEmail || " "}
+                    />
+                  </Field>
+                  <Field label="Account Password">
+                    <TextField
+                      name="accountPassword"
+                      type="password"
+                      value={form.accountPassword}
+                      onChange={handleFieldChange}
+                      size="small"
+                      fullWidth
+                      error={Boolean(fieldErrors.accountPassword)}
+                      helperText={
+                        fieldErrors.accountPassword ||
+                        (editingId
+                          ? "Leave blank to keep existing password"
+                          : " ")
+                      }
+                    />
+                  </Field>
+                  <Field label="Confirm Password">
+                    <TextField
+                      name="confirmAccountPassword"
+                      type="password"
+                      value={form.confirmAccountPassword}
+                      onChange={handleFieldChange}
+                      size="small"
+                      fullWidth
+                      error={Boolean(fieldErrors.confirmAccountPassword)}
+                      helperText={fieldErrors.confirmAccountPassword || " "}
+                    />
+                  </Field>
+                </Box>
+              ) : null}
             </Box>
             <Box
               sx={{
