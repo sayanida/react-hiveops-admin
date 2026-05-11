@@ -1,7 +1,12 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Box, Typography } from "@mui/material";
+import { Alert, Box, Typography } from "@mui/material";
 import { adminApi as api } from "../utils/api.js";
+import {
+  ROLE_CODES,
+  UI_CURRENT_USER_STORAGE_KEY,
+  getUiCurrentRole,
+} from "../access/uiRoleNavigation.js";
 import {
   normalizeList,
   Field,
@@ -119,8 +124,80 @@ function EmptyStateMessage({ title, subtitle }) {
   );
 }
 
+const MOCK_ROSTER_ADMIN_SCOPE = {
+  siteId: "SITE-01",
+  siteName: "North Farm",
+  teamId: "TEAM-A",
+  teamName: "Harvest Team A",
+  allowedStaffIds: ["1", "101", "401"],
+};
+
+function readCurrentUserScopeFromStorage() {
+  if (typeof window === "undefined") return null;
+
+  const keys = [
+    UI_CURRENT_USER_STORAGE_KEY,
+    "current_user",
+    "currentUser",
+    "auth_user",
+  ];
+
+  for (const key of keys) {
+    const raw =
+      window.localStorage.getItem(key) || window.sessionStorage.getItem(key);
+    if (!raw || !raw.trim().startsWith("{")) continue;
+
+    try {
+      const parsed = JSON.parse(raw);
+      const scope =
+        parsed.assignedScope || parsed.scope || parsed.rosterScope || null;
+
+      if (!scope || typeof scope !== "object") continue;
+
+      const allowedStaffIds = Array.isArray(scope.allowedStaffIds)
+        ? scope.allowedStaffIds.map((id) => String(id))
+        : [];
+
+      return {
+        siteId: scope.siteId ? String(scope.siteId) : "",
+        siteName: scope.siteName ? String(scope.siteName) : "",
+        teamId: scope.teamId ? String(scope.teamId) : "",
+        teamName: scope.teamName ? String(scope.teamName) : "",
+        allowedStaffIds,
+      };
+    } catch {
+      // ignore invalid JSON and keep looking in other keys
+    }
+  }
+
+  return null;
+}
+
+function getScopeLabel(scope) {
+  if (!scope) return "Unassigned";
+  const site = scope.siteName || (scope.siteId ? `Site #${scope.siteId}` : "-");
+  const team = scope.teamName || (scope.teamId ? `Team #${scope.teamId}` : "-");
+  return `${site} / ${team}`;
+}
+
 export default function RosterTab({ showToast }) {
   const qc = useQueryClient();
+  const currentRole = getUiCurrentRole();
+  const isRosterAdmin = currentRole === ROLE_CODES.ROSTER_ADMIN;
+  const isOfficeAdmin = currentRole === ROLE_CODES.OFFICE_ADMIN;
+  const canManageRoster = isOfficeAdmin || isRosterAdmin;
+
+  const assignedScope = useMemo(() => {
+    if (!isRosterAdmin) return null;
+    return readCurrentUserScopeFromStorage() || MOCK_ROSTER_ADMIN_SCOPE;
+  }, [isRosterAdmin]);
+
+  const allowedStaffIds = useMemo(() => {
+    if (!isRosterAdmin) return null;
+    const ids = assignedScope?.allowedStaffIds || [];
+    if (!ids.length) return null;
+    return new Set(ids.map((id) => String(id)));
+  }, [assignedScope, isRosterAdmin]);
 
   const [form, setForm] = useState({
     id: "",
@@ -137,13 +214,11 @@ export default function RosterTab({ showToast }) {
 
   // Right panel: independent filters for viewing roster list
   const [listFilters, setListFilters] = useState({
-    query: "",      // optional name or ID filter; empty means "All"
+    query: "", // optional name or ID filter; empty means "All"
     weekDate: "",
   });
 
   const [staffResults, setStaffResults] = useState([]);
-  const [selectedStaff, setSelectedStaff] = useState(null);
-
   // Right panel load key: used only for loading the roster list by date range
   const [listLoadKey, setListLoadKey] = useState(null);
 
@@ -163,7 +238,11 @@ export default function RosterTab({ showToast }) {
   const hasLoadedRosterList = listLoadKey !== null;
 
   // Right panel: load roster list by date range, optionally filtered by name or ID
-  const { data: rosterRows = [], isFetching, isError } = useQuery({
+  const {
+    data: rosterRows = [],
+    isFetching,
+    isError,
+  } = useQuery({
     queryKey: ["roster-list", listLoadKey],
     queryFn: () => {
       let url =
@@ -179,6 +258,11 @@ export default function RosterTab({ showToast }) {
     },
     enabled: listLoadKey !== null,
   });
+
+  const visibleRosterRows = useMemo(() => {
+    if (!allowedStaffIds) return rosterRows;
+    return rosterRows.filter((row) => allowedStaffIds.has(String(row.staffId)));
+  }, [rosterRows, allowedStaffIds]);
 
   // mock test
   /*const { data: rosterRows = [], isFetching } = useQuery({
@@ -204,7 +288,6 @@ export default function RosterTab({ showToast }) {
     },
     enabled: listLoadKey !== null,
   });*/
-
 
   const saveMutation = useMutation({
     mutationFn: ({ recordId, body }) => {
@@ -235,7 +318,6 @@ export default function RosterTab({ showToast }) {
 
   // Put the chosen staff member into the left create/update form only
   const pickStaff = (staff) => {
-    setSelectedStaff(staff);
     setStaffResults([]);
 
     // Optional: show the selected staff back in the search box
@@ -259,6 +341,11 @@ export default function RosterTab({ showToast }) {
 
   // Left panel staff lookup: one box that supports ID or name
   const handleFindStaff = async () => {
+    if (!canManageRoster) {
+      showToast("This role has view-only access in this stage.", true);
+      return;
+    }
+
     const searchValue = entrySearch.trim();
 
     if (!searchValue) {
@@ -270,13 +357,22 @@ export default function RosterTab({ showToast }) {
       if (isNumericSearch(searchValue)) {
         // Search by exact staff ID
         const res = await api.get(
-          `/staff/${encodeURIComponent(searchValue)}/name`
+          `/staff/${encodeURIComponent(searchValue)}/name`,
         );
 
         const staff = {
           staffId: String(res.data.id ?? ""),
           staffName: res.data.name ?? "",
         };
+
+        if (
+          allowedStaffIds &&
+          staff.staffId &&
+          !allowedStaffIds.has(String(staff.staffId))
+        ) {
+          showToast("That staff member is outside your assigned scope.", true);
+          return;
+        }
 
         if (!staff.staffId || !staff.staffName) {
           showToast("No staff found.", true);
@@ -290,23 +386,29 @@ export default function RosterTab({ showToast }) {
 
       // Search by name keyword
       const res = await api.get(
-        `/staff/search?name=${encodeURIComponent(searchValue)}`
+        `/staff/search?name=${encodeURIComponent(searchValue)}`,
       );
 
-      const rows = Object.entries(res.data || {}).map(([staffId, staffName]) => ({
-        staffId,
-        staffName,
-      }));
+      const rows = Object.entries(res.data || {}).map(
+        ([staffId, staffName]) => ({
+          staffId,
+          staffName,
+        }),
+      );
 
-      setStaffResults(rows);
+      const scopedRows = allowedStaffIds
+        ? rows.filter((row) => allowedStaffIds.has(String(row.staffId)))
+        : rows;
 
-      if (rows.length === 0) {
+      setStaffResults(scopedRows);
+
+      if (scopedRows.length === 0) {
         showToast("No staff found.", true);
         return;
       }
 
-      if (rows.length === 1) {
-        pickStaff(rows[0]);
+      if (scopedRows.length === 1) {
+        pickStaff(scopedRows[0]);
         showToast("Staff selected.");
       } else {
         showToast("Multiple staff found. Pick the correct one below.");
@@ -332,10 +434,13 @@ export default function RosterTab({ showToast }) {
 
   // Clicking Edit on the right list fills the left create/update form
   const handleEdit = (row) => {
-    setSelectedStaff({
-      staffId: row.staffId,
-      staffName: row.staffName,
-    });
+    if (allowedStaffIds && !allowedStaffIds.has(String(row.staffId))) {
+      showToast(
+        "You cannot edit roster entries outside your assigned scope.",
+        true,
+      );
+      return;
+    }
 
     setEntrySearch(`${row.staffName} (${row.staffId})`);
 
@@ -364,8 +469,18 @@ export default function RosterTab({ showToast }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    if (!canManageRoster) {
+      showToast("This role has view-only access in this stage.", true);
+      return;
+    }
+
     if (!form.staffId) {
       showToast("Select a staff member first.", true);
+      return;
+    }
+
+    if (allowedStaffIds && !allowedStaffIds.has(String(form.staffId))) {
+      showToast("Selected staff is outside your assigned scope.", true);
       return;
     }
 
@@ -404,6 +519,20 @@ export default function RosterTab({ showToast }) {
         description="Find one staff member, load one 7-day roster window, and create or update roster entries."
       />
 
+      {isRosterAdmin ? (
+        <Alert severity="info" sx={{ mb: 2, borderRadius: 2 }}>
+          Roster Admin assigned scope: {getScopeLabel(assignedScope)}. Roster
+          list and create/edit actions are limited to this scope in UI.
+        </Alert>
+      ) : null}
+
+      {!canManageRoster ? (
+        <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
+          Current role is view-only for roster management in this frontend
+          stage.
+        </Alert>
+      ) : null}
+
       <TwoColumn>
         <PanelCard
           title={form.id ? "Update Roster Entry" : "Create Roster Entry"}
@@ -417,11 +546,16 @@ export default function RosterTab({ showToast }) {
               value={entrySearch}
               onChange={(e) => setEntrySearch(e.target.value)}
               placeholder="Search by name or ID"
+              disabled={!canManageRoster}
             />
           </Field>
 
           <FormActions>
-            <PrimaryButton type="button" onClick={handleFindStaff}>
+            <PrimaryButton
+              type="button"
+              onClick={handleFindStaff}
+              disabled={!canManageRoster}
+            >
               Find Staff
             </PrimaryButton>
           </FormActions>
@@ -466,6 +600,7 @@ export default function RosterTab({ showToast }) {
               required
               value={form.date}
               onChange={set}
+              disabled={!canManageRoster}
             />
           </Field>
 
@@ -476,6 +611,7 @@ export default function RosterTab({ showToast }) {
               required
               value={form.startTime}
               onChange={set}
+              disabled={!canManageRoster}
             />
           </Field>
 
@@ -486,6 +622,7 @@ export default function RosterTab({ showToast }) {
               required
               value={form.endTime}
               onChange={set}
+              disabled={!canManageRoster}
             />
           </Field>
 
@@ -494,7 +631,10 @@ export default function RosterTab({ showToast }) {
           </Field>
 
           <FormActions>
-            <PrimaryButton type="submit" disabled={saveMutation.isPending}>
+            <PrimaryButton
+              type="submit"
+              disabled={saveMutation.isPending || !canManageRoster}
+            >
               {saveMutation.isPending
                 ? "Saving..."
                 : form.id
@@ -502,7 +642,11 @@ export default function RosterTab({ showToast }) {
                   : "Save Roster"}
             </PrimaryButton>
 
-            <GhostButton type="button" onClick={handleClear}>
+            <GhostButton
+              type="button"
+              onClick={handleClear}
+              disabled={!canManageRoster}
+            >
               Clear
             </GhostButton>
           </FormActions>
@@ -510,8 +654,9 @@ export default function RosterTab({ showToast }) {
 
         <PanelCard title="Rostering List">
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-            Select a date to view all staff rostered in this 7-day window.
-            You can optionally filter by staff name or ID, or leave it blank to show all.
+            Select a date to view all staff rostered in this 7-day window. You
+            can optionally filter by staff name or ID, or leave it blank to show
+            all.
           </Typography>
 
           {/* Optional filter for the roster list only */}
@@ -521,7 +666,11 @@ export default function RosterTab({ showToast }) {
               type="text"
               value={listFilters.query}
               onChange={setListFilter}
-              placeholder="Leave blank for All, or enter name / ID"
+              placeholder={
+                isRosterAdmin
+                  ? "Scoped to assigned team/site"
+                  : "Leave blank for All, or enter name / ID"
+              }
             />
           </Field>
 
@@ -532,7 +681,12 @@ export default function RosterTab({ showToast }) {
               value={listFilters.weekDate}
               onChange={setListFilter}
             />
-            <input type="text" readOnly value={weekRange.from} placeholder="From" />
+            <input
+              type="text"
+              readOnly
+              value={weekRange.from}
+              placeholder="From"
+            />
             <input type="text" readOnly value={weekRange.to} placeholder="To" />
             <PrimaryButton
               type="button"
@@ -548,10 +702,18 @@ export default function RosterTab({ showToast }) {
               title="Unable to load rostering list."
               subtitle="Please try again or check the API response."
             />
-          ) : rosterRows.length === 0 ? (
+          ) : visibleRosterRows.length === 0 ? (
             <EmptyStateMessage
-              title="No staff rostered for this period."
-              subtitle="Try selecting a different date range."
+              title={
+                isRosterAdmin
+                  ? "No roster entries in your assigned scope."
+                  : "No staff rostered for this period."
+              }
+              subtitle={
+                isRosterAdmin
+                  ? "Try another date range or verify assigned team/site mock scope."
+                  : "Try selecting a different date range."
+              }
             />
           ) : (
             <Box
@@ -580,7 +742,7 @@ export default function RosterTab({ showToast }) {
                 <Box>Action</Box>
               </Box>
 
-              {rosterRows.map((row) => (
+              {visibleRosterRows.map((row) => (
                 <Box
                   key={row.id}
                   sx={{
@@ -603,6 +765,7 @@ export default function RosterTab({ showToast }) {
                       type="button"
                       size="small"
                       onClick={() => handleEdit(row)}
+                      disabled={!canManageRoster}
                     >
                       Edit
                     </PrimaryButton>

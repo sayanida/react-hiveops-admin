@@ -7,12 +7,40 @@ const DEFAULT_MOCK_ADMIN_USER = {
   role: "OFFICE_ADMIN",
 };
 
+export const MOCK_AUTH_LOGIN_USERS = [
+  {
+    request: { email: "bilbo@farm.com", password: "password123" },
+    response: {
+      staffId: 401,
+      name: "Bilbo Baggins",
+      role: "WORKER",
+      permissions: ["CLOCK_USE"],
+    },
+  },
+  {
+    request: { email: "frodo@farm.com", password: "password123" },
+    response: {
+      staffId: 402,
+      name: "Frodo Baggins",
+      role: "MANAGER",
+      permissions: ["ROSTER_VIEW", "REPORT_VIEW"],
+    },
+  },
+];
+
 export const ROLE_CODES = {
   OFFICE_ADMIN: "OFFICE_ADMIN",
   MANAGER: "MANAGER",
   ROSTER_ADMIN: "ROSTER_ADMIN",
   WORKER: "WORKER",
 };
+
+export const ROLE_DEFINITIONS = [
+  { id: 1, name: ROLE_CODES.OFFICE_ADMIN },
+  { id: 2, name: ROLE_CODES.MANAGER },
+  { id: 3, name: ROLE_CODES.ROSTER_ADMIN },
+  { id: 4, name: ROLE_CODES.WORKER },
+];
 
 export const ROLE_LABELS = {
   [ROLE_CODES.OFFICE_ADMIN]: "Office Admin",
@@ -61,8 +89,17 @@ export function normalizeRole(rawRole) {
 
 export function getUiCurrentRole() {
   if (typeof window === "undefined") return ROLE_CODES.WORKER;
-  const savedRole = window.localStorage.getItem(UI_ROLE_STORAGE_KEY);
-  return normalizeRole(savedRole);
+
+  const savedRole =
+    window.localStorage.getItem(UI_ROLE_STORAGE_KEY) ||
+    window.sessionStorage.getItem(UI_ROLE_STORAGE_KEY);
+
+  if (savedRole && String(savedRole).trim()) {
+    return normalizeRole(savedRole);
+  }
+
+  const currentUser = getUiCurrentUserProfile();
+  return normalizeRole(currentUser?.role);
 }
 
 export function getRoleLabel(role) {
@@ -107,7 +144,7 @@ function parseUserCandidate(rawValue) {
   return { name: rawValue };
 }
 
-export function getUiCurrentUserName() {
+export function getUiCurrentUserProfile() {
   const keys = [
     UI_CURRENT_USER_STORAGE_KEY,
     "current_user",
@@ -117,8 +154,17 @@ export function getUiCurrentUserName() {
 
   for (const key of keys) {
     const parsed = parseUserCandidate(readStorageValue(key));
-    if (!parsed) continue;
+    if (parsed && typeof parsed === "object") {
+      return parsed;
+    }
+  }
 
+  return null;
+}
+
+export function getUiCurrentUserName() {
+  const parsed = getUiCurrentUserProfile();
+  if (parsed) {
     const candidate =
       parsed.name ||
       parsed.userName ||
@@ -133,6 +179,16 @@ export function getUiCurrentUserName() {
   }
 
   return "Admin User";
+}
+
+export function getUiCurrentUserPermissions() {
+  const parsed = getUiCurrentUserProfile();
+  const permissions = parsed?.permissions;
+  if (!Array.isArray(permissions)) return [];
+
+  return permissions
+    .map((item) => String(item || "").trim())
+    .filter((item) => Boolean(item));
 }
 
 export function ensureDefaultMockAdminSession() {
