@@ -25,6 +25,7 @@ import RegistrationsTab from "../tabs/RegistrationsTab.jsx";
 import ReportsTab from "../tabs/ReportsTab.jsx";
 import ExceptionsTab from "../tabs/ExceptionsTab.jsx";
 import SettingsTab from "../tabs/SettingsTab.jsx";
+import { useAuth } from "../auth/AuthContext";
 
 export { api };
 
@@ -54,6 +55,7 @@ const TABS = [
 // ─── Root App ─────────────────────────────────────────────────────────────────
 function AdminApp() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState("staff");
   const [apiBase, setApiBase] = useState(
     () => localStorage.getItem("timeclock_api_base") || "",
@@ -61,7 +63,8 @@ function AdminApp() {
   const { toast, showToast } = useToast();
 
   const handleLogout = () => {
-    navigate("/", { replace: true });
+    logout();
+    navigate("/login", { replace: true });
   };
 
   const ActiveComponent = TABS.find((t) => t.id === activeTab)?.Component;

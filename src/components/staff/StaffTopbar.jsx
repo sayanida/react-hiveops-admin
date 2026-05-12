@@ -51,15 +51,17 @@ export default function StaffTopbar({ apiBase, setApiBase, showToast }) {
                 bgcolor: "primary.main",
               }}
             >
-              FS
+              BTMS
             </Box>
+
             <Box>
-              <Typography variant="h6">Farm Staff</Typography>
+              <Typography variant="h6">Beerenberg Time Management System</Typography>
               <Typography variant="body2" color="text.secondary">
-                Field-ready time capture & roster access
+                Worker Dashboard
               </Typography>
             </Box>
           </Box>
+
           <ApiConfigBar
             storageKey="farm_staff_api_base"
             apiBase={apiBase}
