@@ -26,120 +26,66 @@ export default function StaffTopbar({
   const currentUserName = getUiCurrentUserName();
 
   return (
-    <>
-      <AppBar
-        position="sticky"
-        color="transparent"
-        elevation={0}
+    <AppBar
+      position="sticky"
+      color="transparent"
+      elevation={0}
+      sx={{
+        backdropFilter: "blur(10px)",
+        borderBottom: "1px solid",
+        borderColor: "divider",
+      }}
+    >
+      <Toolbar
         sx={{
-          backdropFilter: "blur(10px)",
-          borderBottom: "1px solid",
-          borderColor: "divider",
+          py: 2,
+          px: { xs: 2, md: 5 },
         }}
       >
-        <Toolbar
+        <Box
           sx={{
-            py: 2,
-            px: { xs: 2, md: 5 },
+            width: "100%",
+            maxWidth: "1400px",
+            mx: "auto",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 2,
+            flexWrap: "wrap",
           }}
         >
-          <Box
-            sx={{
-              width: "100%",
-              maxWidth: "1400px",
-              mx: "auto",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 2,
-              flexWrap: "wrap",
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-              <Box
-                sx={{
-                  width: 46,
-                  height: 46,
-                  display: "grid",
-                  placeItems: "center",
-                  fontWeight: 700,
-                  color: "common.white",
-                  bgcolor: "primary.main",
-                }}
-              >
-                FS
-              </Box>
-              <Box>
-                <Typography variant="h6">Farm Staff</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Field-ready time capture & roster access
-                </Typography>
-              </Box>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Box
+              sx={{
+                width: 46,
+                height: 46,
+                display: "grid",
+                placeItems: "center",
+                fontWeight: 700,
+                color: "common.white",
+                bgcolor: "primary.main",
+              }}
+            >
+              BTMS
             </Box>
 
-            {showUserIdentity && (
-              <Button
-                variant="outlined"
-                color="primary"
-                startIcon={<PersonIcon />}
-                sx={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  minHeight: 44,
-                  borderColor: "primary.main",
-                  color: "primary.main",
-                  textTransform: "none",
-                  backgroundColor: "transparent",
-                }}
-              >
-                <Box
-                  sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    lineHeight: 1.1,
-                  }}
-                >
-                  <Typography
-                    component="span"
-                    sx={{ fontSize: 14, fontWeight: 600 }}
-                  >
-                    {currentUserName}
-                  </Typography>
-                  <Typography
-                    component="span"
-                    sx={{ fontSize: 9, color: "text.secondary", opacity: 0.85 }}
-                  >
-                    {`${roleLabel} (${currentRole})`}
-                  </Typography>
-                </Box>
-              </Button>
-            )}
+            <Box>
+              <Typography variant="h6">Beerenberg Time Management System</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Worker Dashboard
+              </Typography>
+            </Box>
           </Box>
-        </Toolbar>
-      </AppBar>
 
-      <Box
-        sx={{
-          position: "fixed",
-          right: { xs: 12, md: 24 },
-          bottom: { xs: 12, md: 24 },
-          zIndex: (theme) => theme.zIndex.appBar - 1,
-          p: 1.5,
-          border: "1px solid",
-          borderColor: "divider",
-          backgroundColor: "background.paper",
-          boxShadow: "0 10px 24px rgba(28, 26, 23, 0.15)",
-          maxWidth: "calc(100vw - 24px)",
-        }}
-      >
-        <ApiConfigBar
-          storageKey="farm_staff_api_base"
-          apiBase={apiBase}
-          setApiBase={setApiBase}
-          showToast={showToast}
-          inputId="staffApiBase"
-        />
-      </Box>
-    </>
+          <ApiConfigBar
+            storageKey="farm_staff_api_base"
+            apiBase={apiBase}
+            setApiBase={setApiBase}
+            showToast={showToast}
+            inputId="staffApiBase"
+          />
+        </Box>
+      </Toolbar>
+    </AppBar>
   );
 }

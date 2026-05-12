@@ -32,6 +32,7 @@ import RegistrationsTab from "../tabs/RegistrationsTab.jsx";
 import ReportsTab from "../tabs/ReportsTab.jsx";
 import ExceptionsTab from "../tabs/ExceptionsTab.jsx";
 import SettingsTab from "../tabs/SettingsTab.jsx";
+import { useAuth } from "../auth/AuthContext";
 
 export { api };
 
@@ -61,16 +62,8 @@ const TABS = [
 // ─── Root App ─────────────────────────────────────────────────────────────────
 function AdminApp() {
   const navigate = useNavigate();
-  const currentRole = getUiCurrentRole();
-  const currentUserName = getUiCurrentUserName();
-  const roleLabel = getRoleLabel(currentRole);
-  const visibleTabs = useMemo(
-    () => getVisibleAdminTabs(currentRole, TABS),
-    [currentRole],
-  );
-  const [activeTab, setActiveTab] = useState(() =>
-    getFirstVisibleAdminTab(currentRole, TABS),
-  );
+  const { logout } = useAuth();
+  const [activeTab, setActiveTab] = useState("staff");
   const [apiBase, setApiBase] = useState(
     () => localStorage.getItem("timeclock_api_base") || "",
   );
@@ -84,7 +77,8 @@ function AdminApp() {
   }, [activeTab, currentRole, visibleTabs]);
 
   const handleLogout = () => {
-    navigate("/", { replace: true });
+    logout();
+    navigate("/login", { replace: true });
   };
 
   const ActiveComponent = visibleTabs.find((t) => t.id === activeTab)?.Component;

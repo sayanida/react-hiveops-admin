@@ -20,6 +20,7 @@ import Toast from "../components/common/Toast.jsx";
 import StaffTopbar from "../components/staff/StaffTopbar.jsx";
 import StaffDashboard from "../components/staff/StaffDashboard.jsx";
 
+
 // ─── QueryClient ──────────────────────────────────────────────────────────────
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,7 +45,7 @@ function StaffApp() {
           zIndex: 0,
           pointerEvents: "none",
           background:
-            "radial-gradient(circle at 15% 20%, rgba(228, 161, 59, 0.25), transparent 55%), radial-gradient(circle at 85% 5%, rgba(47, 107, 74, 0.2), transparent 55%), radial-gradient(circle at 45% 70%, rgba(201, 109, 58, 0.15), transparent 60%)",
+            "radial-gradient(circle at 20% 20%, rgba(210, 106, 45, 0.2), transparent 50%), radial-gradient(circle at 80% 10%, rgba(46, 111, 95, 0.2), transparent 55%), radial-gradient(circle at 40% 80%, rgba(173, 107, 190, 0.15), transparent 60%)",
         }}
       />
 

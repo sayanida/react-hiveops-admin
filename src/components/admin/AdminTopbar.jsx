@@ -9,14 +9,29 @@
 import { AppBar, Box, Button, Toolbar, Typography } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
 import ApiConfigBar from "../common/ApiConfigBar.jsx";
+import { useAuth } from "../../auth/AuthContext";
 
-export default function AdminTopbar({
-  apiBase,
-  setApiBase,
-  showToast,
-  userName = "Admin User",
-  userRole = "System Administrator",
-}) {
+function formatRoleLabel(role) {
+  switch (role) {
+    case "OFFICE_ADMIN":
+      return "Office Admin";
+    case "ROSTER_ADMIN":
+      return "Roster Admin";
+    case "MANAGER":
+      return "Manager / Supervisor";
+    case "WORKER":
+      return "Worker";
+    default:
+      return "System User";
+  }
+}
+
+export default function AdminTopbar({ apiBase, setApiBase, showToast }) {
+  const { currentUser, currentRole } = useAuth();
+
+  const userName = currentUser?.name || "Admin User";
+  const userRole = formatRoleLabel(currentRole || currentUser?.role);
+
   return (
     <>
       <AppBar
@@ -55,9 +70,10 @@ export default function AdminTopbar({
               }}
             >
               <Typography fontSize="14px" fontWeight={600}>
-                BTMC
+                BTMS
               </Typography>
             </Box>
+
             <Box>
               <Typography variant="h6">
                 Beerenberg Time Management System
@@ -91,6 +107,7 @@ export default function AdminTopbar({
               >
                 {userName}
               </Typography>
+
               <Typography
                 component="span"
                 sx={{ fontSize: 9, color: "text.secondary", opacity: 0.85 }}

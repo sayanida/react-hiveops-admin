@@ -14,18 +14,30 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider, CssBaseline } from "@mui/material";
 import Admin from "./pages/Admin.jsx";
 import Staff from "./pages/Staff.jsx";
+import Login from "./pages/Login.jsx";
 import theme from "./theme.js";
-import {
-  ensureDefaultMockAdminSession,
-  getFirstVisiblePortal,
-  getUiCurrentRole,
-} from "./access/uiRoleNavigation.js";
+import { AuthProvider, useAuth } from "./auth/AuthContext";
 
-ensureDefaultMockAdminSession();
+function HomeRedirect() {
+  const { isAuthenticated } = useAuth();
+  return <Navigate to={isAuthenticated ? "/staff" : "/login"} replace />;
+}
 
-function LandingRedirect() {
-  const portal = getFirstVisiblePortal(getUiCurrentRole());
-  return <Navigate to={`/${portal}`} replace />;
+function LoginRoute() {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? <Navigate to="/staff" replace /> : <Login />;
+}
+
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<HomeRedirect />} />
+      <Route path="/login" element={<LoginRoute />} />
+      <Route path="/admin" element={<Admin />} />
+      <Route path="/staff" element={<Staff />} />
+      <Route path="*" element={<div>Page Not Found</div>} />
+    </Routes>
+  );
 }
 
 createRoot(document.getElementById("root")).render(
@@ -33,12 +45,9 @@ createRoot(document.getElementById("root")).render(
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<LandingRedirect />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/staff" element={<Staff />} />
-          <Route path="*" element={<div>Page Not Found</div>} />
-        </Routes>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>
   </StrictMode>,
