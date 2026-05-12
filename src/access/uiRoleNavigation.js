@@ -1,6 +1,14 @@
 export const UI_ROLE_STORAGE_KEY = "mock_current_role";
 export const UI_CURRENT_USER_STORAGE_KEY = "mock_current_user";
 
+export const MOCK_ROSTER_ADMIN_ASSIGNED_SCOPE = {
+  siteId: "SITE-01",
+  siteName: "North Farm",
+  teamId: "TEAM-A",
+  teamName: "Harvest Team A",
+  allowedStaffIds: ["1", "101", "401"],
+};
+
 const DEFAULT_MOCK_ADMIN_USER = {
   staffId: "A-001",
   name: "Saya Yoshida",
@@ -24,6 +32,16 @@ export const MOCK_AUTH_LOGIN_USERS = [
       name: "Frodo Baggins",
       role: "MANAGER",
       permissions: ["ROSTER_VIEW", "REPORT_VIEW"],
+    },
+  },
+  {
+    request: { email: "samwise@farm.com", password: "password123" },
+    response: {
+      staffId: 403,
+      name: "Samwise Gamgee",
+      role: "ROSTER_ADMIN",
+      permissions: ["ROSTER_VIEW", "ROSTER_MANAGE"],
+      assignedScope: MOCK_ROSTER_ADMIN_ASSIGNED_SCOPE,
     },
   },
 ];

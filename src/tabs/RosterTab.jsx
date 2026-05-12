@@ -3,8 +3,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Alert, Box, Typography } from "@mui/material";
 import { adminApi as api } from "../utils/api.js";
 import {
+  MOCK_ROSTER_ADMIN_ASSIGNED_SCOPE,
   ROLE_CODES,
-  UI_CURRENT_USER_STORAGE_KEY,
+  getUiCurrentUserProfile,
   getUiCurrentRole,
 } from "../access/uiRoleNavigation.js";
 import {
@@ -124,53 +125,25 @@ function EmptyStateMessage({ title, subtitle }) {
   );
 }
 
-const MOCK_ROSTER_ADMIN_SCOPE = {
-  siteId: "SITE-01",
-  siteName: "North Farm",
-  teamId: "TEAM-A",
-  teamName: "Harvest Team A",
-  allowedStaffIds: ["1", "101", "401"],
-};
+function readAssignedScopeFromUserProfile(userProfile) {
+  if (!userProfile || typeof userProfile !== "object") return null;
 
-function readCurrentUserScopeFromStorage() {
-  if (typeof window === "undefined") return null;
+  const scope =
+    userProfile.assignedScope || userProfile.scope || userProfile.rosterScope;
 
-  const keys = [
-    UI_CURRENT_USER_STORAGE_KEY,
-    "current_user",
-    "currentUser",
-    "auth_user",
-  ];
+  if (!scope || typeof scope !== "object") return null;
 
-  for (const key of keys) {
-    const raw =
-      window.localStorage.getItem(key) || window.sessionStorage.getItem(key);
-    if (!raw || !raw.trim().startsWith("{")) continue;
+  const allowedStaffIds = Array.isArray(scope.allowedStaffIds)
+    ? scope.allowedStaffIds.map((id) => String(id))
+    : [];
 
-    try {
-      const parsed = JSON.parse(raw);
-      const scope =
-        parsed.assignedScope || parsed.scope || parsed.rosterScope || null;
-
-      if (!scope || typeof scope !== "object") continue;
-
-      const allowedStaffIds = Array.isArray(scope.allowedStaffIds)
-        ? scope.allowedStaffIds.map((id) => String(id))
-        : [];
-
-      return {
-        siteId: scope.siteId ? String(scope.siteId) : "",
-        siteName: scope.siteName ? String(scope.siteName) : "",
-        teamId: scope.teamId ? String(scope.teamId) : "",
-        teamName: scope.teamName ? String(scope.teamName) : "",
-        allowedStaffIds,
-      };
-    } catch {
-      // ignore invalid JSON and keep looking in other keys
-    }
-  }
-
-  return null;
+  return {
+    siteId: scope.siteId ? String(scope.siteId) : "",
+    siteName: scope.siteName ? String(scope.siteName) : "",
+    teamId: scope.teamId ? String(scope.teamId) : "",
+    teamName: scope.teamName ? String(scope.teamName) : "",
+    allowedStaffIds,
+  };
 }
 
 function getScopeLabel(scope) {
@@ -183,14 +156,23 @@ function getScopeLabel(scope) {
 export default function RosterTab({ showToast }) {
   const qc = useQueryClient();
   const currentRole = getUiCurrentRole();
+  const currentUserProfile = getUiCurrentUserProfile();
   const isRosterAdmin = currentRole === ROLE_CODES.ROSTER_ADMIN;
   const isOfficeAdmin = currentRole === ROLE_CODES.OFFICE_ADMIN;
   const canManageRoster = isOfficeAdmin || isRosterAdmin;
 
   const assignedScope = useMemo(() => {
     if (!isRosterAdmin) return null;
-    return readCurrentUserScopeFromStorage() || MOCK_ROSTER_ADMIN_SCOPE;
-  }, [isRosterAdmin]);
+    return (
+      readAssignedScopeFromUserProfile(currentUserProfile) ||
+      MOCK_ROSTER_ADMIN_ASSIGNED_SCOPE
+    );
+  }, [currentUserProfile, isRosterAdmin]);
+
+  const isUsingFallbackScope = useMemo(() => {
+    if (!isRosterAdmin) return false;
+    return !readAssignedScopeFromUserProfile(currentUserProfile);
+  }, [currentUserProfile, isRosterAdmin]);
 
   const allowedStaffIds = useMemo(() => {
     if (!isRosterAdmin) return null;
@@ -520,10 +502,22 @@ export default function RosterTab({ showToast }) {
       />
 
       {isRosterAdmin ? (
-        <Alert severity="info" sx={{ mb: 2, borderRadius: 2 }}>
-          Roster Admin assigned scope: {getScopeLabel(assignedScope)}. Roster
-          list and create/edit actions are limited to this scope in UI.
-        </Alert>
+        <Box sx={{ mb: 2, display: "grid", gap: 1 }}>
+          <Alert severity="info" sx={{ borderRadius: 2 }}>
+            <strong>Restricted roster access enabled.</strong> Roster Admin can
+            only view and manage roster data within the assigned scope.
+          </Alert>
+          <Alert severity="success" sx={{ borderRadius: 2 }}>
+            Assigned scope: {getScopeLabel(assignedScope)} | Allowed staff:{" "}
+            {assignedScope?.allowedStaffIds?.length || 0}
+          </Alert>
+          {isUsingFallbackScope ? (
+            <Alert severity="warning" sx={{ borderRadius: 2 }}>
+              Assigned scope was not found in current user data. UI is using
+              mock scope fallback for this frontend stage.
+            </Alert>
+          ) : null}
+        </Box>
       ) : null}
 
       {!canManageRoster ? (
