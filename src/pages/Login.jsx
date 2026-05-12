@@ -2,11 +2,13 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Alert,
+  AppBar,
   Box,
   Button,
   Paper,
   Stack,
   TextField,
+  Toolbar,
   Typography,
 } from "@mui/material";
 import { useAuth } from "../auth/AuthContext";
@@ -57,53 +59,75 @@ export default function Login() {
   };
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        backgroundColor: "#f7f3ec",
-      }}
-    >
-      {/* Top-left system header */}
+    <Box sx={{ minHeight: "100vh", backgroundColor: "#f7f3ec" }}>
       <Box
         sx={{
-          px: 3,
-          py: 2.5,
+          position: "fixed",
+          inset: "-20% 0 0 0",
+          zIndex: 0,
+          pointerEvents: "none",
+          background:
+            "radial-gradient(circle at 20% 20%, rgba(210, 106, 45, 0.2), transparent 50%), radial-gradient(circle at 80% 10%, rgba(46, 111, 95, 0.2), transparent 55%), radial-gradient(circle at 40% 80%, rgba(173, 107, 190, 0.15), transparent 60%)",
+        }}
+      />
+
+      <AppBar
+        position="sticky"
+        color="transparent"
+        elevation={0}
+        sx={{
+          backdropFilter: "blur(10px)",
           borderBottom: "1px solid",
-          borderColor: "#d9d0c7",
-          display: "flex",
-          alignItems: "center",
-          gap: 1.5,
+          borderColor: "divider",
         }}
       >
-        <Box
+        <Toolbar
           sx={{
-            width: 38,
-            height: 38,
-            display: "grid",
-            placeItems: "center",
-            bgcolor: "#9b3440",
-            color: "#fff",
-            fontWeight: 700,
-            fontSize: 14,
+            py: 2,
+            px: { xs: 2, md: 5 },
           }}
         >
-          BTMS
-        </Box>
+          <Box
+            sx={{
+              width: "100%",
+              maxWidth: "1400px",
+              mx: "auto",
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+            }}
+          >
+            <Box
+              sx={{
+                width: 46,
+                height: 46,
+                display: "grid",
+                placeItems: "center",
+                fontWeight: 700,
+                color: "common.white",
+                bgcolor: "primary.main",
+              }}
+            >
+              BTMS
+            </Box>
 
-        <Box>
-          <Typography sx={{ fontWeight: 700, fontSize: 14, color: "#252525" }}>
-            Beerenberg Time Management System
-          </Typography>
-          <Typography sx={{ fontSize: 12, color: "#7b746d" }}>
-            Admin Dashboard
-          </Typography>
-        </Box>
-      </Box>
+            <Box>
+              <Typography variant="h6">
+                Beerenberg Time Management System
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Admin Dashboard
+              </Typography>
+            </Box>
+          </Box>
+        </Toolbar>
+      </AppBar>
 
-      {/* Login card */}
       <Box
         sx={{
-          minHeight: "calc(100vh - 84px)",
+          position: "relative",
+          zIndex: 1,
+          minHeight: "calc(100vh - 82px)",
           display: "grid",
           placeItems: "center",
           px: 2,
@@ -113,7 +137,7 @@ export default function Login() {
           variant="outlined"
           sx={{
             width: "100%",
-            maxWidth: 445,
+            maxWidth: 440,
             borderRadius: 1.5,
             overflow: "hidden",
             borderColor: "#d8cfc5",
@@ -126,7 +150,7 @@ export default function Login() {
               bgcolor: "#9b3440",
               color: "#fff",
               px: 2.5,
-              py: 1.8,
+              py: 1.7,
             }}
           >
             <Typography sx={{ fontWeight: 700, fontSize: 16 }}>
@@ -140,13 +164,7 @@ export default function Login() {
                 {error ? <Alert severity="error">{error}</Alert> : null}
 
                 <Box>
-                  <Typography
-                    sx={{
-                      fontSize: 12,
-                      color: "#6f6860",
-                      mb: 0.8,
-                    }}
-                  >
+                  <Typography sx={{ fontSize: 12, color: "#6f6860", mb: 0.8 }}>
                     Email
                   </Typography>
                   <TextField
@@ -158,7 +176,6 @@ export default function Login() {
                     fullWidth
                     size="small"
                     variant="outlined"
-                    InputLabelProps={{ shrink: false }}
                     sx={{
                       "& .MuiOutlinedInput-root": {
                         backgroundColor: "#fffdf9",
@@ -168,13 +185,7 @@ export default function Login() {
                 </Box>
 
                 <Box>
-                  <Typography
-                    sx={{
-                      fontSize: 12,
-                      color: "#6f6860",
-                      mb: 0.8,
-                    }}
-                  >
+                  <Typography sx={{ fontSize: 12, color: "#6f6860", mb: 0.8 }}>
                     Password
                   </Typography>
                   <TextField
@@ -186,7 +197,6 @@ export default function Login() {
                     fullWidth
                     size="small"
                     variant="outlined"
-                    InputLabelProps={{ shrink: false }}
                     sx={{
                       "& .MuiOutlinedInput-root": {
                         backgroundColor: "#fffdf9",
@@ -215,13 +225,7 @@ export default function Login() {
                   {submitting ? "Logging in..." : "Log In"}
                 </Button>
 
-                <Typography
-                  sx={{
-                    fontSize: 12,
-                    color: "#8a837b",
-                    pt: 1,
-                  }}
-                >
+                <Typography sx={{ fontSize: 12, color: "#8a837b", pt: 1 }}>
                   Forgot password? Contact your system administrator.
                 </Typography>
               </Stack>
