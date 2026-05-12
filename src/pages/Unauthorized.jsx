@@ -5,10 +5,11 @@ import { getDefaultPathForRole } from "../auth/roleAccess";
 
 export default function Unauthorized() {
   const navigate = useNavigate();
-  const { currentRole } = useAuth();
+  const { currentRole, currentUser } = useAuth();
+  const role = currentRole || currentUser?.role;
 
   const handleGoBack = () => {
-    navigate(getDefaultPathForRole(currentRole), { replace: true });
+    navigate(getDefaultPathForRole(role), { replace: true });
   };
 
   return (

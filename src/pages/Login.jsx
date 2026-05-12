@@ -13,6 +13,17 @@ import {
 } from "@mui/material";
 import { useAuth } from "../auth/AuthContext";
 
+function extractApiMessage(payload) {
+  if (!payload) return "";
+  if (typeof payload === "string") return payload;
+
+  const firstValue = Object.values(payload).find(
+    (value) => typeof value === "string" && value.trim(),
+  );
+
+  return firstValue ? String(firstValue) : "";
+}
+
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -48,10 +59,17 @@ export default function Login() {
 
       navigate("/", { replace: true });
     } catch (err) {
-      if (err.response?.status === 401) {
-        setError("Invalid email or password.");
+      const status = err.response?.status;
+      const apiMessage = extractApiMessage(err.response?.data);
+
+      if (status === 401) {
+        setError(apiMessage || "Invalid email or password.");
+      } else if (status === 404) {
+        setError(apiMessage || "Account not found.");
+      } else if (status === 409) {
+        setError(apiMessage || "Login conflict occurred. Please try again.");
       } else {
-        setError("Login failed. Please try again.");
+        setError(apiMessage || "Login failed. Please try again.");
       }
     } finally {
       setSubmitting(false);

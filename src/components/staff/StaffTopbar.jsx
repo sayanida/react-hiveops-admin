@@ -6,14 +6,8 @@ StaffTopbar.jsx
 	•	Depends on MUI AppBar/Toolbar and theme
 */
 
-import { AppBar, Box, Button, Toolbar, Typography } from "@mui/material";
-import PersonIcon from "@mui/icons-material/Person";
+import { AppBar, Box, Toolbar, Typography } from "@mui/material";
 import ApiConfigBar from "../common/ApiConfigBar.jsx";
-import {
-  getRoleLabel,
-  getUiCurrentUserName,
-  getUiCurrentRole,
-} from "../../access/uiRoleNavigation.js";
 
 export default function StaffTopbar({
   apiBase,
@@ -21,9 +15,7 @@ export default function StaffTopbar({
   showToast,
   showUserIdentity = true,
 }) {
-  const currentRole = getUiCurrentRole();
-  const roleLabel = getRoleLabel(currentRole);
-  const currentUserName = getUiCurrentUserName();
+  void showUserIdentity;
 
   return (
     <AppBar
@@ -70,7 +62,9 @@ export default function StaffTopbar({
             </Box>
 
             <Box>
-              <Typography variant="h6">Beerenberg Time Management System</Typography>
+              <Typography variant="h6">
+                Beerenberg Time Management System
+              </Typography>
               <Typography variant="body2" color="text.secondary">
                 Worker Dashboard
               </Typography>
