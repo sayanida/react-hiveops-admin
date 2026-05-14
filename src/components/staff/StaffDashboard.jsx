@@ -589,7 +589,11 @@ function FaceIdPocDialog({
   );
 }
 
-export default function StaffDashboard({ showToast }) {
+export default function StaffDashboard({
+  showToast,
+  onSessionStart,
+  onSessionEnd,
+}) {
   const [screen, setScreen] = useState("idle");
   const [selectedMethod, setSelectedMethod] = useState("face");
   const [selectedReason, setSelectedReason] = useState("");
@@ -618,6 +622,7 @@ export default function StaffDashboard({ showToast }) {
     setScreen("idle");
     setSelectedReason("");
     setActivePanel("");
+    onSessionEnd?.();
     showToast?.("Session ended.");
   };
 
@@ -705,6 +710,7 @@ export default function StaffDashboard({ showToast }) {
     setCameraOpen(false);
     setScreen("identified");
     setActivePanel("");
+    onSessionStart?.();
     showToast?.("PoC mock face match successful.");
   }
 

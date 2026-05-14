@@ -7,9 +7,9 @@ Admin.jsx
 	•	Exports adminApi for API calls
 */
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Box, Grid } from "@mui/material";
+import { Alert, Box, Grid } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import useToast from "../hooks/useToast.js";
 import Toast from "../components/common/Toast.jsx";
@@ -26,6 +26,7 @@ import ReportsTab from "../tabs/ReportsTab.jsx";
 import ExceptionsTab from "../tabs/ExceptionsTab.jsx";
 import SettingsTab from "../tabs/SettingsTab.jsx";
 import { useAuth } from "../auth/AuthContext";
+import { ROLES, normalizeRole } from "../auth/roleAccess";
 
 export { api };
 
@@ -52,22 +53,69 @@ const TABS = [
   { id: "settings", label: "Settings", Component: SettingsTab },
 ];
 
+const ROLE_LABELS = {
+  [ROLES.OFFICE_ADMIN]: "Office Admin",
+  [ROLES.MANAGER]: "Manager / Supervisor",
+  [ROLES.ROSTER_ADMIN]: "Roster Admin",
+  [ROLES.WORKER]: "Worker",
+};
+
+const ADMIN_TAB_IDS_BY_ROLE = {
+  [ROLES.OFFICE_ADMIN]: [
+    "staff",
+    "roster",
+    "stations",
+    "clocking",
+    "registrations",
+    "reports",
+    "exceptions",
+    "settings",
+  ],
+  [ROLES.MANAGER]: ["stations", "clocking", "reports", "exceptions"],
+  [ROLES.ROSTER_ADMIN]: ["roster"],
+  [ROLES.WORKER]: [],
+};
+
 // ─── Root App ─────────────────────────────────────────────────────────────────
 function AdminApp() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, currentRole, currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState("staff");
   const [apiBase, setApiBase] = useState(
     () => localStorage.getItem("timeclock_api_base") || "",
   );
   const { toast, showToast } = useToast();
 
+  const resolvedRole =
+    normalizeRole(currentRole || currentUser?.role) || ROLES.WORKER;
+  const roleLabel = ROLE_LABELS[resolvedRole] || ROLE_LABELS[ROLES.WORKER];
+  const currentUserName =
+    currentUser?.name || currentUser?.email || "Admin User";
+
+  const visibleTabs = useMemo(() => {
+    const allowed = new Set(ADMIN_TAB_IDS_BY_ROLE[resolvedRole] || []);
+    return TABS.filter((tab) => allowed.has(tab.id));
+  }, [resolvedRole]);
+
+  const firstVisibleTabId = visibleTabs[0]?.id ?? null;
+
+  useEffect(() => {
+    const hasAccessToActiveTab = visibleTabs.some(
+      (tab) => tab.id === activeTab,
+    );
+    if (!hasAccessToActiveTab && firstVisibleTabId) {
+      setActiveTab(firstVisibleTabId);
+    }
+  }, [activeTab, firstVisibleTabId, visibleTabs]);
+
   const handleLogout = () => {
     logout();
     navigate("/login", { replace: true });
   };
 
-  const ActiveComponent = TABS.find((t) => t.id === activeTab)?.Component;
+  const ActiveComponent = visibleTabs.find(
+    (t) => t.id === activeTab,
+  )?.Component;
 
   return (
     <Box>
@@ -102,14 +150,20 @@ function AdminApp() {
           <Grid container spacing={3}>
             <Grid size={{ xs: 12, md: 2.5 }}>
               <AdminSidebar
-                tabs={TABS}
+                tabs={visibleTabs}
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
                 onLogout={handleLogout}
               />
             </Grid>
             <Grid size={{ xs: 12, md: 9.5 }}>
-              {ActiveComponent && <ActiveComponent showToast={showToast} />}
+              {ActiveComponent ? (
+                <ActiveComponent showToast={showToast} />
+              ) : (
+                <Alert severity="info" sx={{ borderRadius: 2 }}>
+                  {roleLabel} has no Admin Portal navigation items in UI mode.
+                </Alert>
+              )}
             </Grid>
           </Grid>
         </Box>

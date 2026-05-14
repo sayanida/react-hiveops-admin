@@ -9,7 +9,14 @@ StaffTopbar.jsx
 import { AppBar, Box, Toolbar, Typography } from "@mui/material";
 import ApiConfigBar from "../common/ApiConfigBar.jsx";
 
-export default function StaffTopbar({ apiBase, setApiBase, showToast }) {
+export default function StaffTopbar({
+  apiBase,
+  setApiBase,
+  showToast,
+  showUserIdentity = true,
+}) {
+  void showUserIdentity;
+
   return (
     <AppBar
       position="sticky"
@@ -55,7 +62,9 @@ export default function StaffTopbar({ apiBase, setApiBase, showToast }) {
             </Box>
 
             <Box>
-              <Typography variant="h6">Beerenberg Time Management System</Typography>
+              <Typography variant="h6">
+                Beerenberg Time Management System
+              </Typography>
               <Typography variant="body2" color="text.secondary">
                 Worker Dashboard
               </Typography>
