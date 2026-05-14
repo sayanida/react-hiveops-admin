@@ -14,6 +14,7 @@ import {
   MenuItem,
   Select,
   Stack,
+  TextField,
   Typography,
 } from "@mui/material";
 import { PanelCard, PrimaryButton, GhostButton } from "../../tabs/shared.jsx";
@@ -55,6 +56,25 @@ const MOCK_ATTENDANCE = {
   clockOutTime: "03:00 PM",
   totalHours: "8 hrs",
 };
+
+const BREAK_REASONS = [
+  { value: "meal", label: "Meal", description: "Scheduled meal break" },
+  { value: "rest", label: "Rest", description: "Short rest break" },
+  { value: "personal", label: "Personal", description: "Personal reason" },
+  { value: "emergency", label: "Emergency", description: "Emergency situation" },
+  { value: "other", label: "Other", description: "Specify below" },
+];
+
+const MOCK_BREAK = {
+  type: "Meal",
+  startTime: "10:00 AM",
+  endTime: "10:32 AM",
+  duration: "32 minutes",
+};
+
+function getBreakReasonLabel(value) {
+  return BREAK_REASONS.find((reason) => reason.value === value)?.label || "Meal";
+}
 
 function KioskActionButton({ children, sx = {}, ...props }) {
   return (
@@ -373,9 +393,230 @@ function ClockOutPanel() {
   );
 }
 
+function StartBreakPanel({
+  selectedReason,
+  setSelectedReason,
+  breakNote,
+  setBreakNote,
+  onConfirm,
+  onCancel,
+}) {
+  return (
+    <Box>
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
+        Select Break Reason
+      </Typography>
+
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
+        Choose the reason for your break before starting.
+      </Typography>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" },
+          gap: 2,
+          mb: 2,
+        }}
+      >
+        {BREAK_REASONS.map((reason) => {
+          const isSelected = selectedReason === reason.value;
+
+          return (
+            <Box
+              key={reason.value}
+              onClick={() => setSelectedReason(reason.value)}
+              sx={{
+                position: "relative",
+                p: 2,
+                minHeight: 92,
+                borderRadius: 1.5,
+                cursor: "pointer",
+                backgroundColor: isSelected ? "#e7f4e8" : "#f3efe9",
+                border: "2px solid",
+                borderColor: isSelected ? "#2f8a3d" : "transparent",
+                "&:hover": {
+                  borderColor: "#2f8a3d",
+                },
+              }}
+            >
+              {isSelected ? (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: 10,
+                    right: 10,
+                    width: 20,
+                    height: 20,
+                    borderRadius: "50%",
+                    bgcolor: "#2f8a3d",
+                    color: "#fff",
+                    display: "grid",
+                    placeItems: "center",
+                    fontSize: 13,
+                    fontWeight: 700,
+                  }}
+                >
+                  ✓
+                </Box>
+              ) : null}
+
+              <Typography sx={{ fontWeight: 700, mb: 0.5 }}>
+                {reason.label}
+              </Typography>
+
+              <Typography variant="body2" color="text.secondary">
+                {reason.description}
+              </Typography>
+            </Box>
+          );
+        })}
+      </Box>
+
+      <TextField
+        fullWidth
+        label="Additional note"
+        placeholder="e.g. Doctor's appointment"
+        value={breakNote}
+        onChange={(event) => setBreakNote(event.target.value)}
+        helperText="Required only when Other is selected"
+        sx={{ mb: 2 }}
+      />
+
+      <Stack direction="row" spacing={2}>
+        <PrimaryButton
+          onClick={onConfirm}
+          sx={{
+            width: 220,
+            py: 1.2,
+            backgroundColor: "#2f8a3d",
+            textTransform: "none",
+            fontWeight: 700,
+            "&:hover": { backgroundColor: "#277434" },
+            color: "#ffffff",
+          }}
+        >
+          Start Break
+        </PrimaryButton>
+
+        <GhostButton
+          onClick={onCancel}
+          sx={{ width: 160, py: 1.2, textTransform: "none" }}
+        >
+          Cancel
+        </GhostButton>
+      </Stack>
+    </Box>
+  );
+}
+
+function BreakStartedPanel({ selectedReason }) {
+  return (
+    <Box>
+      <Box
+        sx={{
+          p: 2,
+          borderRadius: 1.5,
+          backgroundColor: "#c8e8c8",
+          mb: 3,
+        }}
+      >
+        <Typography sx={{ fontWeight: 700, color: "#1b5e20" }}>
+          ✓ Break Started
+        </Typography>
+      </Box>
+
+      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
+        Break Summary
+      </Typography>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" },
+          gap: 2,
+          mb: 2,
+        }}
+      >
+        <RosterInfoCard
+          label="Break Type"
+          value={getBreakReasonLabel(selectedReason)}
+        />
+        <RosterInfoCard label="Break Start" value={MOCK_BREAK.startTime} />
+      </Box>
+
+      <Typography variant="body2" color="text.secondary">
+        When the worker returns, select End Break to record the end time and
+        calculate the break duration.
+      </Typography>
+    </Box>
+  );
+}
+
+function EndBreakPanel({ selectedReason, onConfirm, onCancel }) {
+  return (
+    <Box>
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
+        End Break
+      </Typography>
+
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
+        Your break end time will be recorded and duration calculated.
+      </Typography>
+
+      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
+        Break Summary
+      </Typography>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "repeat(4, minmax(0, 1fr))" },
+          gap: 2,
+          mb: 4,
+        }}
+      >
+        <RosterInfoCard
+          label="Break Type"
+          value={getBreakReasonLabel(selectedReason)}
+        />
+        <RosterInfoCard label="Break Start" value={MOCK_BREAK.startTime} />
+        <RosterInfoCard label="Break End" value={MOCK_BREAK.endTime} />
+        <RosterInfoCard label="Duration" value={MOCK_BREAK.duration} />
+      </Box>
+
+      <Stack direction="row" spacing={2}>
+        <PrimaryButton
+          onClick={onConfirm}
+          sx={{
+            width: 260,
+            py: 1.2,
+            backgroundColor: "#2f8a3d",
+            textTransform: "none",
+            fontWeight: 700,
+            "&:hover": { backgroundColor: "#277434" },
+            color: "#ffffff",
+          }}
+        >
+          Confirm End Break
+        </PrimaryButton>
+
+        <GhostButton
+          onClick={onCancel}
+          sx={{ width: 160, py: 1.2, textTransform: "none" }}
+        >
+          Cancel
+        </GhostButton>
+      </Stack>
+    </Box>
+  );
+}
+
 function IdentifiedState({
   selectedReason,
   setSelectedReason,
+  breakNote,
+  setBreakNote,
   activePanel,
   onAction,
   onEndSession,
@@ -481,22 +722,6 @@ function IdentifiedState({
             </KioskActionButton>
           </Box>
 
-          <FormControl fullWidth size="small">
-            <InputLabel id="break-reason-select-label">Break Reason</InputLabel>
-            <Select
-              labelId="break-reason-select-label"
-              value={selectedReason}
-              label="Break Reason"
-              onChange={(e) => setSelectedReason(e.target.value)}
-            >
-              <MenuItem value="meal">Meal</MenuItem>
-              <MenuItem value="hydration">Hydration</MenuItem>
-              <MenuItem value="equipment">Equipment Issue</MenuItem>
-              <MenuItem value="weather">Weather Delay</MenuItem>
-              <MenuItem value="other">Other</MenuItem>
-            </Select>
-          </FormControl>
-
           <KioskActionButton
             onClick={() => onAction("roster")}
             sx={{
@@ -573,6 +798,23 @@ function IdentifiedState({
           <ClockInPanel />
         ) : activePanel === "clock-out" ? (
           <ClockOutPanel />
+        ) : activePanel === "start-break" ? (
+          <StartBreakPanel
+            selectedReason={selectedReason}
+            setSelectedReason={setSelectedReason}
+            breakNote={breakNote}
+            setBreakNote={setBreakNote}
+            onConfirm={() => onAction("break-started")}
+            onCancel={() => onAction("roster")}
+          />
+        ) : activePanel === "break-started" ? (
+          <BreakStartedPanel selectedReason={selectedReason} />
+        ) : activePanel === "end-break" ? (
+          <EndBreakPanel
+            selectedReason={selectedReason}
+            onConfirm={() => onAction("roster")}
+            onCancel={() => onAction("break-started")}
+          />
         ) : activePanel === "supervisor-override" ? (
           <Box>
             <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
@@ -716,7 +958,8 @@ export default function StaffDashboard({
 }) {
   const [screen, setScreen] = useState("idle");
   const [selectedMethod, setSelectedMethod] = useState("face");
-  const [selectedReason, setSelectedReason] = useState("");
+  const [selectedReason, setSelectedReason] = useState("meal");
+  const [breakNote, setBreakNote] = useState("");
   const [activePanel, setActivePanel] = useState("");
 
     // ─── Task 123 webcam PoC state ─────────────────────────────────────────────
@@ -740,7 +983,8 @@ export default function StaffDashboard({
 
   const handleEndSession = () => {
     setScreen("idle");
-    setSelectedReason("");
+    setSelectedReason("meal");
+    setBreakNote("");
     setActivePanel("");
     onSessionEnd?.();
     showToast?.("Session ended.");
@@ -846,6 +1090,8 @@ export default function StaffDashboard({
         <IdentifiedState
           selectedReason={selectedReason}
           setSelectedReason={setSelectedReason}
+          breakNote={breakNote}
+          setBreakNote={setBreakNote}
           activePanel={activePanel}
           onAction={handleAction}
           onEndSession={handleEndSession}
