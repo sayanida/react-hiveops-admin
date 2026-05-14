@@ -16,13 +16,6 @@ import Toast from "../components/common/Toast.jsx";
 import AdminTopbar from "../components/admin/AdminTopbar.jsx";
 import AdminSidebar from "../components/admin/AdminSidebar.jsx";
 import { adminApi as api } from "../utils/api.js";
-import {
-  getFirstVisibleAdminTab,
-  getRoleLabel,
-  getUiCurrentUserName,
-  getUiCurrentRole,
-  getVisibleAdminTabs,
-} from "../access/uiRoleNavigation.js";
 
 import StaffTab from "../tabs/StaffTab.jsx";
 import RosterTab from "../tabs/RosterTab.jsx";
@@ -32,6 +25,8 @@ import RegistrationsTab from "../tabs/RegistrationsTab.jsx";
 import ReportsTab from "../tabs/ReportsTab.jsx";
 import ExceptionsTab from "../tabs/ExceptionsTab.jsx";
 import SettingsTab from "../tabs/SettingsTab.jsx";
+import { useAuth } from "../auth/AuthContext";
+import { ROLES, normalizeRole } from "../auth/roleAccess";
 
 export { api };
 
@@ -58,36 +53,69 @@ const TABS = [
   { id: "settings", label: "Settings", Component: SettingsTab },
 ];
 
+const ROLE_LABELS = {
+  [ROLES.OFFICE_ADMIN]: "Office Admin",
+  [ROLES.MANAGER]: "Manager / Supervisor",
+  [ROLES.ROSTER_ADMIN]: "Roster Admin",
+  [ROLES.WORKER]: "Worker",
+};
+
+const ADMIN_TAB_IDS_BY_ROLE = {
+  [ROLES.OFFICE_ADMIN]: [
+    "staff",
+    "roster",
+    "stations",
+    "clocking",
+    "registrations",
+    "reports",
+    "exceptions",
+    "settings",
+  ],
+  [ROLES.MANAGER]: ["stations", "clocking", "reports", "exceptions"],
+  [ROLES.ROSTER_ADMIN]: ["roster"],
+  [ROLES.WORKER]: [],
+};
+
 // ─── Root App ─────────────────────────────────────────────────────────────────
 function AdminApp() {
   const navigate = useNavigate();
-  const currentRole = getUiCurrentRole();
-  const currentUserName = getUiCurrentUserName();
-  const roleLabel = getRoleLabel(currentRole);
-  const visibleTabs = useMemo(
-    () => getVisibleAdminTabs(currentRole, TABS),
-    [currentRole],
-  );
-  const [activeTab, setActiveTab] = useState(() =>
-    getFirstVisibleAdminTab(currentRole, TABS),
-  );
+  const { logout, currentRole, currentUser } = useAuth();
+  const [activeTab, setActiveTab] = useState("staff");
   const [apiBase, setApiBase] = useState(
     () => localStorage.getItem("timeclock_api_base") || "",
   );
   const { toast, showToast } = useToast();
 
+  const resolvedRole =
+    normalizeRole(currentRole || currentUser?.role) || ROLES.WORKER;
+  const roleLabel = ROLE_LABELS[resolvedRole] || ROLE_LABELS[ROLES.WORKER];
+  const currentUserName =
+    currentUser?.name || currentUser?.email || "Admin User";
+
+  const visibleTabs = useMemo(() => {
+    const allowed = new Set(ADMIN_TAB_IDS_BY_ROLE[resolvedRole] || []);
+    return TABS.filter((tab) => allowed.has(tab.id));
+  }, [resolvedRole]);
+
+  const firstVisibleTabId = visibleTabs[0]?.id ?? null;
+
   useEffect(() => {
-    const hasAccessToActiveTab = visibleTabs.some((tab) => tab.id === activeTab);
-    if (!hasAccessToActiveTab) {
-      setActiveTab(getFirstVisibleAdminTab(currentRole, TABS));
+    const hasAccessToActiveTab = visibleTabs.some(
+      (tab) => tab.id === activeTab,
+    );
+    if (!hasAccessToActiveTab && firstVisibleTabId) {
+      setActiveTab(firstVisibleTabId);
     }
-  }, [activeTab, currentRole, visibleTabs]);
+  }, [activeTab, firstVisibleTabId, visibleTabs]);
 
   const handleLogout = () => {
-    navigate("/", { replace: true });
+    logout();
+    navigate("/login", { replace: true });
   };
 
-  const ActiveComponent = visibleTabs.find((t) => t.id === activeTab)?.Component;
+  const ActiveComponent = visibleTabs.find(
+    (t) => t.id === activeTab,
+  )?.Component;
 
   return (
     <Box>
@@ -106,8 +134,6 @@ function AdminApp() {
         apiBase={apiBase}
         setApiBase={setApiBase}
         showToast={showToast}
-        userName={currentUserName}
-        userRole={`${roleLabel} (${currentRole})`}
       />
 
       <Box
