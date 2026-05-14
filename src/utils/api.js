@@ -10,15 +10,30 @@ api.js
 
 import axios from "axios";
 
-function createApiClient(storageKey) {
+function resolveBaseUrl(storageKeys, fallbackBase = "") {
+  const keys = Array.isArray(storageKeys) ? storageKeys : [storageKeys];
+
+  for (const key of keys) {
+    const base = localStorage.getItem(key);
+    if (base) return base.replace(/\/$/, "");
+  }
+
+  return fallbackBase ? fallbackBase.replace(/\/$/, "") : "";
+}
+
+function createApiClient(storageKeys, fallbackBase = "") {
   const client = axios.create({
     headers: { "Content-Type": "application/json" },
   });
 
   client.interceptors.request.use((config) => {
-    const base = localStorage.getItem(storageKey) || "";
-    if (!base) return Promise.reject(new Error("Set API base URL first."));
-    config.baseURL = base.replace(/\/$/, "");
+    const base = resolveBaseUrl(storageKeys, fallbackBase);
+
+    if (!base) {
+      return Promise.reject(new Error("Set API base URL first."));
+    }
+
+    config.baseURL = base;
     return config;
   });
 
@@ -35,3 +50,15 @@ function createApiClient(storageKey) {
 
 export const adminApi = createApiClient("timeclock_api_base");
 export const staffApi = createApiClient("farm_staff_api_base");
+
+// Auth can use whichever base has already been configured.
+// Fallback keeps local dev moving if nothing was set yet.
+export const authApi = createApiClient(
+  ["timeclock_api_base", "farm_staff_api_base"],
+  "http://localhost:8080",
+);
+
+export async function loginUser(payload) {
+  const { data } = await authApi.post("/auth/login", payload);
+  return data;
+}
