@@ -47,6 +47,15 @@ const MOCK_TODAY_ROSTER = {
   duration: "8 hrs",
 };
 
+const MOCK_ATTENDANCE = {
+  clockInStation: "North Shed",
+  clockOutStation: "East Gate",
+  clockInTime: "07:00 AM",
+  scheduledEnd: "03:00 PM",
+  clockOutTime: "03:00 PM",
+  totalHours: "8 hrs",
+};
+
 function KioskActionButton({ children, sx = {}, ...props }) {
   return (
     <PrimaryButton
@@ -259,6 +268,111 @@ function TodayRosterPanel({ hasShift, roster }) {
   );
 }
 
+function ClockInPanel() {
+  return (
+    <Box>
+      <Box
+        sx={{
+          p: 2,
+          borderRadius: 1.5,
+          backgroundColor: "#c8e8c8",
+          mb: 3,
+        }}
+      >
+        <Typography sx={{ fontWeight: 700, color: "#1b5e20" }}>
+          ✓ Clock In Recorded
+        </Typography>
+      </Box>
+
+      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
+        Shift Summary
+      </Typography>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" },
+          gap: 2,
+        }}
+      >
+        <RosterInfoCard
+          label="Clock-in Station"
+          value={MOCK_ATTENDANCE.clockInStation}
+        />
+        <RosterInfoCard label="Clock In" value={MOCK_ATTENDANCE.clockInTime} />
+        <RosterInfoCard
+          label="Scheduled End"
+          value={MOCK_ATTENDANCE.scheduledEnd}
+        />
+      </Box>
+    </Box>
+  );
+}
+
+function ClockOutPanel() {
+  return (
+    <Box>
+      <Box
+        sx={{
+          p: 2,
+          borderRadius: 1.5,
+          backgroundColor: "#c8e8c8",
+          mb: 3,
+        }}
+      >
+        <Typography sx={{ fontWeight: 700, color: "#1b5e20" }}>
+          ✓ Clock Out Recorded
+        </Typography>
+      </Box>
+
+      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
+        Shift Summary
+      </Typography>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" },
+          gap: 2,
+          mb: 2,
+        }}
+      >
+        <RosterInfoCard
+          label="Clock-in Station"
+          value={MOCK_ATTENDANCE.clockInStation}
+        />
+        <RosterInfoCard
+          label="Clock-out Station"
+          value={MOCK_ATTENDANCE.clockOutStation}
+        />
+        <RosterInfoCard label="Clock In" value={MOCK_ATTENDANCE.clockInTime} />
+        <RosterInfoCard label="Clock Out" value={MOCK_ATTENDANCE.clockOutTime} />
+        <RosterInfoCard label="Total Hours" value={MOCK_ATTENDANCE.totalHours} />
+      </Box>
+
+      <Box
+        sx={{
+          p: 2,
+          borderRadius: 1.5,
+          backgroundColor: "#fff4d6",
+          border: "1px solid",
+          borderColor: "#f1d58a",
+        }}
+      >
+        <Typography sx={{ fontWeight: 700, color: "#c47a00", mb: 0.5 }}>
+          ℹ️ Cross-station clock-out detected
+        </Typography>
+
+        <Typography variant="body2" sx={{ color: "#6d4c00" }}>
+          Clock-in station ({MOCK_ATTENDANCE.clockInStation}) and clock-out
+          station ({MOCK_ATTENDANCE.clockOutStation}) have both been recorded
+          with your attendance entry.
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
 function IdentifiedState({
   selectedReason,
   setSelectedReason,
@@ -281,6 +395,8 @@ function IdentifiedState({
         <Stack spacing={2}>
           <Box sx={{ textAlign: "center" }}>
             <Avatar
+              src={frodoProfile}
+              alt={MOCK_WORKER.name}
               sx={{
                 width: 88,
                 height: 88,
@@ -453,6 +569,10 @@ function IdentifiedState({
           </Box>
         ) : activePanel === "roster" ? (
           <TodayRosterPanel hasShift={hasShift} roster={roster} />
+        ) : activePanel === "clock-in" ? (
+          <ClockInPanel />
+        ) : activePanel === "clock-out" ? (
+          <ClockOutPanel />
         ) : activePanel === "supervisor-override" ? (
           <Box>
             <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
