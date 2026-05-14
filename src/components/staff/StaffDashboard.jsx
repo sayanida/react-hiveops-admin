@@ -10,8 +10,11 @@ import {
   DialogTitle,
   Divider,
   FormControl,
+  FormControlLabel,
   InputLabel,
   MenuItem,
+  Radio,
+  RadioGroup,
   Select,
   Stack,
   TextField,
@@ -612,6 +615,202 @@ function EndBreakPanel({ selectedReason, onConfirm, onCancel }) {
   );
 }
 
+function SupervisorAssistancePanel({ onConfirm, onCancel }) {
+  const [supervisorPin, setSupervisorPin] = useState("");
+  const keypadItems = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "←", "0", "✓"];
+
+  const handlePinPress = (item) => {
+    if (item === "←") {
+      setSupervisorPin((currentPin) => currentPin.slice(0, -1));
+      return;
+    }
+
+    if (item === "✓") {
+      return;
+    }
+
+    setSupervisorPin((currentPin) => {
+      if (currentPin.length >= 4) return currentPin;
+      return currentPin + item;
+    });
+  };
+
+  return (
+    <Box>
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
+        Supervisor Assistance
+      </Typography>
+
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        Override clock in or out on behalf of this worker.
+      </Typography>
+
+      <Divider sx={{ mb: 2 }} />
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "320px 1fr" },
+          gap: 4,
+          alignItems: "stretch",
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+          }}
+        >
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            Supervisor PIN
+          </Typography>
+
+          <Typography variant="caption" color="text.secondary">
+            Enter your 4-digit PIN to authorise.
+          </Typography>
+
+          <Box
+            sx={{
+              mt: 1,
+              mb: 1.5,
+              height: 48,
+              borderRadius: 1.5,
+              backgroundColor: "#eeeeee",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 1,
+            }}
+          >
+            {supervisorPin.split("").map((_, dotIndex) => (
+              <Box
+                key={dotIndex}
+                sx={{
+                  width: 9,
+                  height: 9,
+                  borderRadius: "50%",
+                  backgroundColor: "#6b6b6b",
+                }}
+              />
+            ))}
+          </Box>
+
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gridTemplateRows: "repeat(4, 1fr)",
+              gap: 1,
+              flexGrow: 1,
+              minHeight: 210,
+            }}
+          >
+            {keypadItems.map((item) => {
+              const isBack = item === "←";
+              const isConfirm = item === "✓";
+
+              return (
+                <Box
+                  key={item}
+                  component="button"
+                  type="button"
+                  onClick={() => handlePinPress(item)}
+                  sx={{
+                    height: "100%",
+                    minHeight: 52,
+                    border: "none",
+                    borderRadius: 1.5,
+                    cursor: "pointer",
+                    fontWeight: 700,
+                    fontSize: 18,
+                    backgroundColor: isBack
+                    ? "#f57c00"
+                    : isConfirm
+                    ? "#2f8a3d"
+                    : "#f2f2f2",
+                    color: isBack || isConfirm ? "#ffffff" : "#222222",
+                    "&:hover": {
+                      opacity: 0.9,
+                    },
+                  }}
+                >
+                  {item}
+                </Box>
+              );
+            })}
+          </Box>
+        </Box>
+
+        <Box>
+          <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
+            Override Details
+          </Typography>
+
+          <TextField
+            fullWidth
+            size="small"
+            label="Worker"
+            value={`${MOCK_WORKER.name} (${MOCK_WORKER.id})`}
+            InputProps={{ readOnly: true }}
+            sx={{ mb: 2 }}
+          />
+
+          <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+            Action *
+          </Typography>
+
+          <RadioGroup row defaultValue="clock-in" sx={{ mb: 2 }}>
+            <FormControlLabel
+              value="clock-in"
+              control={<Radio size="small" />}
+              label="Clock In"
+            />
+            <FormControlLabel
+              value="clock-out"
+              control={<Radio size="small" />}
+              label="Clock Out"
+            />
+          </RadioGroup>
+
+          <TextField
+            fullWidth
+            multiline
+            minRows={4}
+            label="Reason *"
+            defaultValue="Worker's keycard failed. Device confirmed faulty. Supervisor authorising manual clock-in."
+            sx={{ mb: 3 }}
+          />
+
+          <Stack direction="row" spacing={2}>
+            <PrimaryButton
+              onClick={onConfirm}
+              sx={{
+                width: 260,
+                py: 1.2,
+                backgroundColor: "#9b3440",
+                textTransform: "none",
+                fontWeight: 700,
+                "&:hover": { backgroundColor: "#852d37" },
+                color: "#ffffff"
+              }}
+            >
+              Confirm
+            </PrimaryButton>
+
+            <GhostButton
+              onClick={onCancel}
+              sx={{ width: 160, py: 1.2, textTransform: "none" }}
+            >
+              Cancel
+            </GhostButton>
+          </Stack>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
 function IdentifiedState({
   selectedReason,
   setSelectedReason,
@@ -734,14 +933,14 @@ function IdentifiedState({
           </KioskActionButton>
 
           <KioskActionButton
-            onClick={() => onAction("supervisor-override")}
+            onClick={() => onAction("supervisor-assistance")}
             sx={{
-              backgroundColor: "#d9d4cd",
-              color: "#585047",
-              "&:hover": { backgroundColor: "#cbc5bd" },
+              backgroundColor: "#858585",
+              color: "#ffffff",
+              "&:hover": { backgroundColor: "#aeaeae" },
             }}
           >
-            Supervisor Override
+            Supervisor Assistance
           </KioskActionButton>
 
           <Divider />
@@ -815,15 +1014,11 @@ function IdentifiedState({
             onConfirm={() => onAction("roster")}
             onCancel={() => onAction("break-started")}
           />
-        ) : activePanel === "supervisor-override" ? (
-          <Box>
-            <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
-              Supervisor Override
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Placeholder panel for Task 120 layout.
-            </Typography>
-          </Box>
+        ) : activePanel === "supervisor-assistance" ? (
+          <SupervisorAssistancePanel
+            onConfirm={() => onAction("roster")}
+            onCancel={() => onAction("roster")}
+          />
         ) : (
           <Box>
             <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
