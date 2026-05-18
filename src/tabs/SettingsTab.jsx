@@ -1,10 +1,22 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
+  Alert,
   Box,
-  TextField,
+  Button,
   Checkbox,
+  Divider,
   FormControlLabel,
+  Paper,
+  Radio,
+  RadioGroup,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
   Typography,
 } from "@mui/material";
 import { adminApi as api } from "../utils/api.js";
@@ -19,6 +31,30 @@ import {
 const DEFAULT_DAILY_OVERTIME_HOURS = 8;
 const DEFAULT_WEEKLY_OVERTIME_HOURS = 38;
 
+const BREAK_REASONS = [
+  {
+    id: "meal",
+    name: "Meal",
+    description: "Scheduled meal break during shift",
+  },
+  { id: "rest", name: "Rest", description: "Short rest period during shift" },
+  {
+    id: "personal",
+    name: "Personal",
+    description: "Personal time away from work",
+  },
+  {
+    id: "emergency",
+    name: "Emergency",
+    description: "Emergency circumstances",
+  },
+  { id: "other", name: "Other", description: "Any other break reason" },
+];
+
+const BREAK_INIT = Object.fromEntries(BREAK_REASONS.map((r) => [r.id, null]));
+
+const HEADER_BG = "#9b3440";
+
 const initialForm = {
   dailyOvertimeHours: DEFAULT_DAILY_OVERTIME_HOURS,
   weeklyOvertimeHours: DEFAULT_WEEKLY_OVERTIME_HOURS,
@@ -28,6 +64,10 @@ const initialForm = {
 };
 export default function SettingsTab({ showToast }) {
   const [form, setForm] = useState(initialForm);
+  const [breakReasons, setBreakReasons] = useState(BREAK_INIT);
+  const [breakErrors, setBreakErrors] = useState({});
+  const [stationPolicy, setStationPolicy] = useState("warn_only");
+  const [unrosteredPolicy, setUnrosteredPolicy] = useState("allow_flag");
   const lastErrorAtRef = useRef(0);
   const set = (e) =>
     setForm((f) => ({
@@ -141,6 +181,43 @@ export default function SettingsTab({ showToast }) {
   const handleResetToDefaults = () => {
     setForm(initialForm);
     showToast("Settings reset to defaults");
+  };
+
+  const handleSaveBreakReasons = () => {
+    const errors = {};
+    BREAK_REASONS.forEach((r) => {
+      if (breakReasons[r.id] === null) {
+        errors[r.id] = "Please select Paid or Unpaid.";
+      }
+    });
+    if (Object.keys(errors).length > 0) {
+      setBreakErrors(errors);
+      return;
+    }
+    setBreakErrors({});
+    showToast("Break reason settings saved.");
+  };
+
+  const handleResetBreakReasons = () => {
+    setBreakReasons(BREAK_INIT);
+    setBreakErrors({});
+  };
+
+  const handleSaveStationPolicy = () => {
+    showToast("Station policy saved.");
+  };
+
+  const handleSaveUnrosteredPolicy = () => {
+    showToast("Unrostered clock-in policy saved.");
+  };
+
+  const setBreakChoice = (id, value) => {
+    setBreakReasons((prev) => ({ ...prev, [id]: value }));
+    setBreakErrors((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
   };
   return (
     <div>
@@ -325,6 +402,334 @@ export default function SettingsTab({ showToast }) {
           </GhostButton>
         </FormActions>
       </PanelCard>
+
+      {/* ─── Break Reasons ─────────────────────────────────────────────────── */}
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
+          Break Reasons
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Configure whether each break reason counts as paid or unpaid time.
+          This determines if break time is excluded from total hours worked.
+        </Typography>
+
+        <PanelCard>
+          <Alert severity="info" sx={{ mb: 2, borderRadius: 1 }}>
+            Changes apply to future break records only. Existing break records
+            are not affected.
+          </Alert>
+
+          <TableContainer component={Paper} variant="outlined">
+            <Table size="small">
+              <TableHead>
+                <TableRow sx={{ bgcolor: "grey.50" }}>
+                  <TableCell sx={{ fontWeight: 700, width: 200 }}>
+                    Break Reason
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Description</TableCell>
+                  <TableCell sx={{ fontWeight: 700, width: 200 }}>
+                    Paid / Unpaid
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {BREAK_REASONS.map((r) => {
+                  const chosen = breakReasons[r.id];
+                  const hasError = !!breakErrors[r.id];
+                  return (
+                    <TableRow key={r.id}>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {r.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.disabled">
+                          Predefined
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {r.description}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: "flex" }}>
+                          <Button
+                            size="small"
+                            variant={
+                              chosen === "paid" ? "contained" : "outlined"
+                            }
+                            disableElevation
+                            onClick={() => setBreakChoice(r.id, "paid")}
+                            sx={{
+                              textTransform: "none",
+                              borderRadius: "4px 0 0 4px",
+                              ...(chosen === "paid"
+                                ? {
+                                    bgcolor: HEADER_BG,
+                                    "&:hover": { bgcolor: "#7d2834" },
+                                  }
+                                : {
+                                    borderColor: hasError
+                                      ? "error.main"
+                                      : "divider",
+                                    color: hasError
+                                      ? "error.main"
+                                      : "text.secondary",
+                                  }),
+                            }}
+                          >
+                            Paid
+                          </Button>
+                          <Button
+                            size="small"
+                            variant={
+                              chosen === "unpaid" ? "contained" : "outlined"
+                            }
+                            disableElevation
+                            onClick={() => setBreakChoice(r.id, "unpaid")}
+                            sx={{
+                              textTransform: "none",
+                              borderRadius: "0 4px 4px 0",
+                              ml: "-1px",
+                              ...(chosen === "unpaid"
+                                ? {
+                                    bgcolor: HEADER_BG,
+                                    "&:hover": { bgcolor: "#7d2834" },
+                                  }
+                                : {
+                                    borderColor: hasError
+                                      ? "error.main"
+                                      : "divider",
+                                    color: hasError
+                                      ? "error.main"
+                                      : "text.secondary",
+                                  }),
+                            }}
+                          >
+                            Unpaid
+                          </Button>
+                        </Box>
+                        {hasError && (
+                          <Typography
+                            variant="caption"
+                            color="error"
+                            sx={{ display: "block", mt: 0.5 }}
+                          >
+                            {breakErrors[r.id]}
+                          </Typography>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          <Box sx={{ display: "flex", gap: 1.5, mt: 2.5 }}>
+            <Button
+              variant="contained"
+              disableElevation
+              onClick={handleSaveBreakReasons}
+              sx={{
+                textTransform: "none",
+                fontWeight: 700,
+                bgcolor: HEADER_BG,
+                "&:hover": { bgcolor: "#7d2834" },
+              }}
+            >
+              Save Settings
+            </Button>
+            <Button
+              variant="outlined"
+              color="inherit"
+              sx={{ textTransform: "none" }}
+              onClick={handleResetBreakReasons}
+            >
+              Reset to Defaults
+            </Button>
+          </Box>
+        </PanelCard>
+      </Box>
+
+      {/* ─── Station Clock-In / Clock-Out Policy ─────────────────────── */}
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
+          Station Clock-In / Clock-Out Policy
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Controls whether workers must use different stations for clock-in and
+          clock-out.
+        </Typography>
+
+        <PanelCard title="Station Policy">
+          <RadioGroup
+            value={stationPolicy}
+            onChange={(e) => setStationPolicy(e.target.value)}
+          >
+            <FormControlLabel
+              value="warn_only"
+              sx={{ alignItems: "flex-start", m: 0, mb: 1.5 }}
+              control={
+                <Radio
+                  size="small"
+                  sx={{ mt: "-2px", "&.Mui-checked": { color: HEADER_BG } }}
+                />
+              }
+              label={
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    Warn only (default)
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    System warns the worker if they use the same station for
+                    both clock-in and clock-out, but still allows it.
+                  </Typography>
+                </Box>
+              }
+            />
+            <FormControlLabel
+              value="enforce"
+              sx={{ alignItems: "flex-start", m: 0 }}
+              control={
+                <Radio
+                  size="small"
+                  sx={{ mt: "-2px", "&.Mui-checked": { color: HEADER_BG } }}
+                />
+              }
+              label={
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    Enforce different stations
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    System blocks a worker from clocking out at the same station
+                    they clocked in at.
+                  </Typography>
+                </Box>
+              }
+            />
+          </RadioGroup>
+
+          <Divider sx={{ my: 2 }} />
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: "block", mb: 1.5 }}
+          >
+            Changes apply immediately to all future clock events.
+          </Typography>
+          <Box sx={{ display: "flex", gap: 1.5 }}>
+            <Button
+              variant="contained"
+              disableElevation
+              onClick={handleSaveStationPolicy}
+              sx={{
+                textTransform: "none",
+                fontWeight: 700,
+                bgcolor: HEADER_BG,
+                "&:hover": { bgcolor: "#7d2834" },
+              }}
+            >
+              Save Changes
+            </Button>
+            <Button
+              variant="outlined"
+              color="inherit"
+              sx={{ textTransform: "none" }}
+              onClick={() => setStationPolicy("warn_only")}
+            >
+              Reset to Default
+            </Button>
+          </Box>
+        </PanelCard>
+      </Box>
+
+      {/* ─── Unrostered Clock-In Policy ─────────────────────────────── */}
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
+          Unrostered Clock-In Policy
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Controls what happens when a worker clocks in without a roster entry
+          for that day.
+        </Typography>
+
+        <PanelCard title="Unrostered Clock-In">
+          <RadioGroup
+            value={unrosteredPolicy}
+            onChange={(e) => setUnrosteredPolicy(e.target.value)}
+          >
+            <FormControlLabel
+              value="allow_flag"
+              sx={{ alignItems: "flex-start", m: 0, mb: 1.5 }}
+              control={
+                <Radio
+                  size="small"
+                  sx={{ mt: "-2px", "&.Mui-checked": { color: HEADER_BG } }}
+                />
+              }
+              label={
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    Allow and flag (default)
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Unrostered clock-in is allowed but flagged as an exception
+                    and Mgr/Supervisor is notified.
+                  </Typography>
+                </Box>
+              }
+            />
+            <FormControlLabel
+              value="block"
+              sx={{ alignItems: "flex-start", m: 0 }}
+              control={
+                <Radio
+                  size="small"
+                  sx={{ mt: "-2px", "&.Mui-checked": { color: HEADER_BG } }}
+                />
+              }
+              label={
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    Block unrostered clock-ins
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Worker is blocked from clocking in without a roster entry
+                    for that day.
+                  </Typography>
+                </Box>
+              }
+            />
+          </RadioGroup>
+
+          <Divider sx={{ my: 2 }} />
+          <Box sx={{ display: "flex", gap: 1.5 }}>
+            <Button
+              variant="contained"
+              disableElevation
+              onClick={handleSaveUnrosteredPolicy}
+              sx={{
+                textTransform: "none",
+                fontWeight: 700,
+                bgcolor: HEADER_BG,
+                "&:hover": { bgcolor: "#7d2834" },
+              }}
+            >
+              Save Changes
+            </Button>
+            <Button
+              variant="outlined"
+              color="inherit"
+              sx={{ textTransform: "none" }}
+              onClick={() => setUnrosteredPolicy("allow_flag")}
+            >
+              Reset to Default
+            </Button>
+          </Box>
+        </PanelCard>
+      </Box>
     </div>
   );
 }
