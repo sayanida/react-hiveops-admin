@@ -45,7 +45,7 @@ const TABS = [
   { id: "clocking", label: "Clocking", Component: ClockingTab },
   {
     id: "registrations",
-    label: "Cards & Biometrics",
+    label: "ID Registration",
     Component: RegistrationsTab,
   },
   { id: "reports", label: "Reports", Component: ReportsTab },
