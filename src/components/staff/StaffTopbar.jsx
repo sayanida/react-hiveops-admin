@@ -2,19 +2,12 @@
 StaffTopbar.jsx
 	Top bar for staff pages
 	•	Displays brand badge, title, and subtitle
-	•	Includes ApiConfigBar (inputId set to staffApiBase)
 	•	Depends on MUI AppBar/Toolbar and theme
 */
 
 import { AppBar, Box, Toolbar, Typography } from "@mui/material";
-import ApiConfigBar from "../common/ApiConfigBar.jsx";
 
-export default function StaffTopbar({
-  apiBase,
-  setApiBase,
-  showToast,
-  showUserIdentity = true,
-}) {
+export default function StaffTopbar({ showUserIdentity = true }) {
   void showUserIdentity;
 
   return (
@@ -70,14 +63,6 @@ export default function StaffTopbar({
               </Typography>
             </Box>
           </Box>
-
-          <ApiConfigBar
-            storageKey="farm_staff_api_base"
-            apiBase={apiBase}
-            setApiBase={setApiBase}
-            showToast={showToast}
-            inputId="staffApiBase"
-          />
         </Box>
       </Toolbar>
     </AppBar>

@@ -17,6 +17,15 @@ const DEFAULT_MOCK_ADMIN_USER = {
 
 export const MOCK_AUTH_LOGIN_USERS = [
   {
+    request: { email: "admin@beerenberg.com.au", password: "password123" },
+    response: {
+      staffId: "A-001",
+      name: "Saya Yoshida",
+      role: "OFFICE_ADMIN",
+      permissions: ["ADMIN_PORTAL"],
+    },
+  },
+  {
     request: { email: "bilbo@farm.com", password: "password123" },
     response: {
       staffId: 401,

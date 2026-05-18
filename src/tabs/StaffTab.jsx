@@ -1,24 +1,35 @@
-import { useEffect, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import {
   Box,
   Button,
+  Chip,
   Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   FormControlLabel,
+  IconButton,
   InputAdornment,
+  List,
+  ListItem,
+  ListItemText,
   MenuItem,
   Pagination,
   TextField,
   Typography,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import CloseIcon from "@mui/icons-material/Close";
 import LockIcon from "@mui/icons-material/Lock";
 import SearchIcon from "@mui/icons-material/Search";
-import { adminApi as api } from "../utils/api.js";
+import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
+import {
+  mockRegistrations,
+  mockStaffRows,
+} from "../mocks/staffAdminMockData.js";
 import {
   normalizeList,
   DataTable,
@@ -114,6 +125,71 @@ function getRoleLabel(role) {
   return ROLE_LABELS[role] ?? role ?? "";
 }
 
+function resolveStaffStatus(row) {
+  const rawStatus = String(row.status ?? row.staffStatus ?? row.state ?? "")
+    .trim()
+    .toLowerCase();
+  const activeFlag = row.isActive ?? row.active ?? row.enabled;
+  const deactivatedAt = row.deactivatedAt ?? row.deactivated_at;
+
+  if (rawStatus.includes("deactiv") || rawStatus.includes("inactive")) {
+    return { label: "Deactivated", isActive: false };
+  }
+
+  if (rawStatus.includes("active")) {
+    return { label: "Active", isActive: true };
+  }
+
+  if (typeof activeFlag === "boolean") {
+    return activeFlag
+      ? { label: "Active", isActive: true }
+      : { label: "Deactivated", isActive: false };
+  }
+
+  if (deactivatedAt) {
+    return { label: "Deactivated", isActive: false };
+  }
+
+  return { label: "Active", isActive: true };
+}
+
+function normalizeRegistration(row) {
+  return {
+    staffId: row.staffId ?? row.staff_id ?? row.staffID ?? null,
+    method: row.method ?? row.type ?? row.identificationMethod ?? "Unknown",
+    identifier: row.identifier ?? row.token ?? row.value ?? "-",
+    reason: row.reason ?? "",
+  };
+}
+
+const IDENT_METHOD_CATALOG = [
+  {
+    key: "webcam_face",
+    label: "Webcam Face Mock",
+    aliases: ["webcam face", "face", "facial recognition"],
+    description: "Simulated facial recognition via webcam",
+  },
+  {
+    key: "qr_pin",
+    label: "QR / PIN",
+    aliases: ["qr", "pin", "qr / pin", "qr code"],
+    description: "QR code scan or 4-digit PIN at station",
+  },
+];
+
+function getEmployeeCode(staffId) {
+  const numeric = Number(staffId);
+  if (Number.isNaN(numeric)) {
+    return `EMP-${String(staffId ?? "").padStart(3, "0")}`;
+  }
+  return `EMP-${String(numeric).padStart(3, "0")}`;
+}
+
+function isMethodRegistered(registrationMethod, aliases) {
+  const text = String(registrationMethod ?? "").toLowerCase();
+  return aliases.some((alias) => text.includes(alias));
+}
+
 function normalizeStaffRowForTable(row) {
   return {
     id: row.id ?? row.staffId ?? "",
@@ -126,6 +202,18 @@ function normalizeStaffRowForTable(row) {
     postCode: row.postCode ?? row.post_code ?? "",
     contractType: row.contractType ?? row.contract_type ?? "",
     role: row.role ?? "",
+    status: row.status ?? row.staffStatus ?? row.state ?? "",
+    staffStatus: row.staffStatus ?? "",
+    state: row.state ?? "",
+    isActive:
+      typeof row.isActive === "boolean"
+        ? row.isActive
+        : typeof row.active === "boolean"
+          ? row.active
+          : typeof row.enabled === "boolean"
+            ? row.enabled
+            : undefined,
+    deactivatedAt: row.deactivatedAt ?? row.deactivated_at ?? null,
     standardRate: row.standardRate ?? row.standard_rate ?? "",
     overtimeRate: row.overtimeRate ?? row.overtime_rate ?? "",
     weeklyHours: row.weeklyHours ?? row.weekly_hours ?? null,
@@ -233,14 +321,20 @@ function validateStaffForm(values) {
 }
 
 export default function StaffTab({ showToast }) {
-  const qc = useQueryClient();
   const rowsPerPage = 10;
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [staffRows, setStaffRows] = useState(() =>
+    normalizeList(mockStaffRows).map((row) => normalizeStaffRowForTable(row)),
+  );
+  const [registrationRows] = useState(() =>
+    normalizeList(mockRegistrations).map((row) => normalizeRegistration(row)),
+  );
   const [form, setForm] = useState(initialForm);
   const [fieldErrors, setFieldErrors] = useState({});
   const [editingId, setEditingId] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedStaffForStatus, setSelectedStaffForStatus] = useState(null);
 
   const handleFieldChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -288,17 +382,6 @@ export default function StaffTab({ showToast }) {
     });
   };
 
-  // ── List query (load once and filter on client by name or id)
-  const { data: staffRows = [] } = useQuery({
-    queryKey: ["staff"],
-    queryFn: () =>
-      api
-        .get("/staff")
-        .then((r) =>
-          normalizeList(r.data).map((row) => normalizeStaffRowForTable(row)),
-        ),
-  });
-
   const keyword = search.trim().toLowerCase();
   const filteredRows = keyword
     ? staffRows.filter((row) => {
@@ -312,6 +395,104 @@ export default function StaffTab({ showToast }) {
     filteredRows.map((row) => [String(row.id ?? ""), row]),
   );
 
+  const selectedStaffId = selectedStaffForStatus?.id;
+  const isStatusDialogOpen = Boolean(selectedStaffForStatus);
+  const selectedStaffRegistrations = useMemo(() => {
+    if (selectedStaffId == null) return [];
+    return registrationRows.filter((item) => {
+      const itemStaffId = item.staffId ?? item.staff_id ?? item.staffID;
+      return String(itemStaffId) === String(selectedStaffId);
+    });
+  }, [registrationRows, selectedStaffId]);
+
+  const isRegistrationsError = false;
+  const methodCards = useMemo(
+    () =>
+      IDENT_METHOD_CATALOG.map((method) => {
+        const matched = selectedStaffRegistrations.find((registration) =>
+          isMethodRegistered(registration.method, method.aliases),
+        );
+        return {
+          ...method,
+          isRegistered: Boolean(matched),
+          registeredIdentifier: matched?.identifier ?? "",
+        };
+      }),
+    [selectedStaffRegistrations],
+  );
+
+  const isAccountActive = Boolean(selectedStaffForStatus?.isActive);
+  const dialogTone = isAccountActive
+    ? {
+        titleBg: "#2e7d32",
+        titleIcon: <CheckCircleOutlineIcon fontSize="small" />,
+        accountLabel: "Active Account",
+        cardBg: "#d8ecd9",
+        cardBorder: "#95d29b",
+        deactivatedCardBg: "#f3e1e5",
+        deactivatedCardBorder: "#ec9ea8",
+      }
+    : {
+        titleBg: "#d32f2f",
+        titleIcon: <WarningAmberOutlinedIcon fontSize="small" />,
+        accountLabel: "Deactivated Account",
+        cardBg: "#f3e1e5",
+        cardBorder: "#ec9ea8",
+        deactivatedCardBg: "#f3e1e5",
+        deactivatedCardBorder: "#ec9ea8",
+      };
+
+  const openStatusDialog = (row) => {
+    const { label, isActive } = resolveStaffStatus(row);
+    setSelectedStaffForStatus({
+      id: row.id,
+      name: row.name,
+      role: row.role,
+      statusLabel: label,
+      isActive,
+    });
+  };
+
+  const closeStatusDialog = () => {
+    setSelectedStaffForStatus(null);
+  };
+
+  const toggleStaffActivation = () => {
+    if (!selectedStaffForStatus) return;
+
+    const nextIsActive = !selectedStaffForStatus.isActive;
+    const nextStatusLabel = nextIsActive ? "Active" : "Deactivated";
+
+    setStaffRows((prev) =>
+      prev.map((row) => {
+        if (String(row.id) !== String(selectedStaffForStatus.id)) {
+          return row;
+        }
+
+        return {
+          ...row,
+          isActive: nextIsActive,
+          status: nextIsActive ? "ACTIVE" : "DEACTIVATED",
+          staffStatus: nextIsActive ? "ACTIVE" : "DEACTIVATED",
+          state: nextIsActive ? "ACTIVE" : "DEACTIVATED",
+          deactivatedAt: nextIsActive ? null : new Date().toISOString(),
+        };
+      }),
+    );
+
+    setSelectedStaffForStatus((prev) =>
+      prev
+        ? {
+            ...prev,
+            isActive: nextIsActive,
+            statusLabel: nextStatusLabel,
+          }
+        : prev,
+    );
+
+    showToast(nextIsActive ? "Staff activated." : "Staff deactivated.");
+  };
+
   const tableRows = filteredRows.map((row) => ({
     ID: row.id ?? "",
     Name: row.name ?? "",
@@ -321,6 +502,19 @@ export default function StaffTab({ showToast }) {
     Role: getRoleLabel(row.role),
     "Std Rate": row.standardRate ?? "",
     "OT Rate": row.overtimeRate ?? "",
+    Status: (() => {
+      const { label, isActive } = resolveStaffStatus(row);
+      return (
+        <Chip
+          size="small"
+          clickable
+          label={label}
+          color={isActive ? "success" : "default"}
+          onClick={() => openStatusDialog(row)}
+          sx={{ minWidth: 96 }}
+        />
+      );
+    })(),
   }));
 
   const pageCount = Math.max(1, Math.ceil(tableRows.length / rowsPerPage));
@@ -339,38 +533,53 @@ export default function StaffTab({ showToast }) {
   // ── Save mutation
   const saveMutation = useMutation({
     mutationFn: async (payload) => {
-      const id = payload.id;
-
-      if (!id) {
-        return api.post("/staff/save", payload);
+      if (!payload.id) {
+        const maxId = staffRows.reduce(
+          (max, row) => Math.max(max, Number(row.id) || 0),
+          0,
+        );
+        return {
+          mode: "create",
+          row: {
+            ...payload,
+            id: maxId + 1,
+            status: "ACTIVE",
+            isActive: true,
+            deactivatedAt: null,
+          },
+        };
       }
 
-      try {
-        // Keep compatibility with backend save endpoint.
-        return await api.post("/staff/save", payload);
-      } catch (err) {
-        const status = err?.response?.status;
-        const raw = err?.response?.data;
-        const detail =
-          typeof raw === "string"
-            ? raw
-            : JSON.stringify(raw || {}) + (err?.message || "");
+      const existing = staffRows.find(
+        (row) => String(row.id) === String(payload.id),
+      );
 
-        // json-server rewrite handles POST as insert only. - FE Mock test only!!
-        if (status === 500 && /duplicate id|insert failed/i.test(detail)) {
-          return api.put(`/staff/${id}`, payload);
+      return {
+        mode: "update",
+        row: {
+          ...existing,
+          ...payload,
+        },
+      };
+    },
+    onSuccess: (result) => {
+      setStaffRows((prev) => {
+        if (result.mode === "create") {
+          return [...prev, normalizeStaffRowForTable(result.row)];
         }
 
-        throw err;
-      }
-    },
-    onSuccess: () => {
+        return prev.map((row) =>
+          String(row.id) === String(result.row.id)
+            ? normalizeStaffRowForTable(result.row)
+            : row,
+        );
+      });
+
       showToast(editingId ? "Staff updated." : "Staff saved.");
       setForm(initialForm);
       setFieldErrors({});
       setEditingId(null);
       setIsDialogOpen(false);
-      qc.invalidateQueries({ queryKey: ["staff"] });
     },
     onError: (err) => showToast(errMsg(err, "Failed to save staff"), true),
   });
@@ -970,6 +1179,186 @@ export default function StaffTab({ showToast }) {
                 ? "Update Staff"
                 : "Save Staff"}
           </PrimaryButton>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={isStatusDialogOpen}
+        onClose={closeStatusDialog}
+        fullWidth
+        maxWidth="sm"
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            overflow: "hidden",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            bgcolor: dialogTone.titleBg,
+            color: "common.white",
+            py: 1.75,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            {dialogTone.titleIcon}
+            <Typography variant="h6" component="span" sx={{ fontWeight: 700 }}>
+              {dialogTone.accountLabel}
+            </Typography>
+          </Box>
+          <IconButton
+            onClick={closeStatusDialog}
+            sx={{ color: "common.white" }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ pt: 2.75 }}>
+          {selectedStaffForStatus ? (
+            <Box
+              sx={{ mb: 2, display: "flex", flexDirection: "column", gap: 0.5 }}
+            >
+              <Typography
+                variant="h5"
+                sx={{ fontWeight: 700, lineHeight: 1.2 }}
+              >
+                {selectedStaffForStatus.name || "Staff"}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {getEmployeeCode(selectedStaffForStatus.id)} -{" "}
+                {getRoleLabel(selectedStaffForStatus.role) || "Worker"}
+              </Typography>
+              <Box
+                sx={{
+                  mt: 1,
+                  borderTop: "1px solid",
+                  borderColor: "divider",
+                }}
+              />
+            </Box>
+          ) : null}
+
+          {isRegistrationsError ? (
+            <Typography variant="body2" color="error.main">
+              Failed to load identification methods.
+            </Typography>
+          ) : null}
+
+          {!isRegistrationsError ? (
+            <Box>
+              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+                Registered Identification Methods
+              </Typography>
+              <List dense disablePadding>
+                {methodCards.map((method) => (
+                  <ListItem
+                    key={method.key}
+                    disablePadding
+                    sx={{
+                      px: 1.5,
+                      py: 1.25,
+                      mb: 1.5,
+                      alignItems: "flex-start",
+                      border: "1px solid",
+                      borderColor: method.isRegistered
+                        ? dialogTone.cardBorder
+                        : dialogTone.deactivatedCardBorder,
+                      backgroundColor: method.isRegistered
+                        ? dialogTone.cardBg
+                        : dialogTone.deactivatedCardBg,
+                      borderRadius: 1,
+                    }}
+                  >
+                    <ListItemText
+                      primary={
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {method.label}
+                          </Typography>
+                          <Chip
+                            size="small"
+                            label={
+                              isAccountActive
+                                ? method.isRegistered
+                                  ? "Registered"
+                                  : "Not Registered"
+                                : "Deactivated"
+                            }
+                            color={
+                              isAccountActive
+                                ? method.isRegistered
+                                  ? "success"
+                                  : "default"
+                                : "error"
+                            }
+                            variant={isAccountActive ? "filled" : "outlined"}
+                          />
+                        </Box>
+                      }
+                      secondary={
+                        <>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            component="span"
+                          >
+                            {method.description}
+                          </Typography>
+                          {method.isRegistered &&
+                          method.registeredIdentifier ? (
+                            <Typography
+                              variant="caption"
+                              display="block"
+                              color="text.secondary"
+                              sx={{ mt: 0.25 }}
+                            >
+                              ID: {method.registeredIdentifier}
+                            </Typography>
+                          ) : null}
+                        </>
+                      }
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            </Box>
+          ) : null}
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: "space-between", px: 3, py: 2 }}>
+          <Button
+            type="button"
+            variant="outlined"
+            color={isAccountActive ? "error" : "success"}
+            onClick={toggleStaffActivation}
+            sx={{
+              textTransform: "none",
+              fontWeight: 700,
+              minWidth: 170,
+              backgroundColor: isAccountActive
+                ? "rgba(211, 47, 47, 0.08)"
+                : "rgba(46, 125, 50, 0.08)",
+            }}
+          >
+            {isAccountActive ? "Deactivate Staff" : "Reactivate Staff"}
+          </Button>
+          <GhostButton
+            type="button"
+            onClick={closeStatusDialog}
+            sx={{ minWidth: 120 }}
+          >
+            Close
+          </GhostButton>
         </DialogActions>
       </Dialog>
     </div>

@@ -1,6 +1,11 @@
 import { createContext, useContext, useMemo, useState } from "react";
-import { loginUser } from "../utils/api";
-import { clearAuthUser, getAuthRole, getAuthUser, saveAuthUser } from "./authStorage";
+import {
+  clearAuthUser,
+  getAuthRole,
+  getAuthUser,
+  saveAuthUser,
+} from "./authStorage";
+import { MOCK_AUTH_LOGIN_USERS } from "../access/uiRoleNavigation";
 
 const AuthContext = createContext(null);
 
@@ -9,7 +14,29 @@ export function AuthProvider({ children }) {
   const [currentRole, setCurrentRole] = useState(() => getAuthRole());
 
   const login = async ({ email, password }) => {
-    const user = await loginUser({ email, password });
+    const emailKey = String(email || "")
+      .trim()
+      .toLowerCase();
+    const passwordKey = String(password || "");
+
+    const matched = MOCK_AUTH_LOGIN_USERS.find((candidate) => {
+      const candidateEmail = String(candidate?.request?.email || "")
+        .trim()
+        .toLowerCase();
+      const candidatePassword = String(candidate?.request?.password || "");
+      return candidateEmail === emailKey && candidatePassword === passwordKey;
+    });
+
+    if (!matched) {
+      const error = new Error("Invalid email or password.");
+      error.response = {
+        status: 401,
+        data: "Invalid email or password.",
+      };
+      throw error;
+    }
+
+    const user = matched.response;
 
     const normalizedUser = {
       ...user,

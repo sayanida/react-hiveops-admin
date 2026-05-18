@@ -2,12 +2,11 @@
 Staff.jsx
 	Entry page for the staff dashboard
 	•	Wraps StaffTopbar and StaffDashboard with QueryClientProvider
-	•	Manages API base URL (farm_staff_api_base) and toast notifications
+  •	Manages staff session state and toast notifications
 	•	Contains StaffApp for state management
-	
+
   Difference from Admin.jsx:
-	•	Staff-specific theme and display
-	•	Uses staff API base from localStorage
+  •	Staff-specific theme and display
 	
   Note: QueryClient settings affect dashboard behavior due to multiple API calls and UI interactions
 */
@@ -20,7 +19,6 @@ import Toast from "../components/common/Toast.jsx";
 import StaffTopbar from "../components/staff/StaffTopbar.jsx";
 import StaffDashboard from "../components/staff/StaffDashboard.jsx";
 
-
 // ─── QueryClient ──────────────────────────────────────────────────────────────
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,9 +28,6 @@ const queryClient = new QueryClient({
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
 function StaffApp() {
-  const [apiBase, setApiBase] = useState(
-    () => localStorage.getItem("farm_staff_api_base") || "",
-  );
   const [isStaffSessionActive, setIsStaffSessionActive] = useState(false);
   const { toast, showToast } = useToast();
 
@@ -49,12 +44,7 @@ function StaffApp() {
         }}
       />
 
-      <StaffTopbar
-        apiBase={apiBase}
-        setApiBase={setApiBase}
-        showToast={showToast}
-        showUserIdentity={isStaffSessionActive}
-      />
+      <StaffTopbar showUserIdentity={isStaffSessionActive} />
 
       <StaffDashboard
         showToast={showToast}

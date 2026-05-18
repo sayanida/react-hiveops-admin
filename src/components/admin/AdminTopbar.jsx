@@ -2,13 +2,11 @@
 •	AdminTopbar.jsx
   Renders the top navigation bar of the admin interface.
 	•	Displays brand logo, title, and subtitle
-	•	Includes ApiConfigBar for viewing and editing the API base URL
-	•	Props: API URL, update function, toast notification function, input ID
+  •	Displays current signed-in user identity
 */
 
 import { AppBar, Box, Button, Toolbar, Typography } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
-import ApiConfigBar from "../common/ApiConfigBar.jsx";
 import { useAuth } from "../../auth/AuthContext";
 
 function formatRoleLabel(role) {
@@ -26,7 +24,7 @@ function formatRoleLabel(role) {
   }
 }
 
-export default function AdminTopbar({ apiBase, setApiBase, showToast }) {
+export default function AdminTopbar() {
   const { currentUser, currentRole } = useAuth();
 
   const userName = currentUser?.name || "Admin User";
@@ -118,29 +116,6 @@ export default function AdminTopbar({ apiBase, setApiBase, showToast }) {
           </Button>
         </Toolbar>
       </AppBar>
-
-      <Box
-        sx={{
-          position: "fixed",
-          right: { xs: 12, md: 24 },
-          bottom: { xs: 12, md: 24 },
-          zIndex: (theme) => theme.zIndex.appBar - 1,
-          p: 1.5,
-          border: "1px solid",
-          borderColor: "divider",
-          backgroundColor: "background.paper",
-          boxShadow: "0 10px 24px rgba(28, 26, 23, 0.15)",
-          maxWidth: "calc(100vw - 24px)",
-        }}
-      >
-        <ApiConfigBar
-          storageKey="timeclock_api_base"
-          apiBase={apiBase}
-          setApiBase={setApiBase}
-          showToast={showToast}
-          inputId="adminApiBase"
-        />
-      </Box>
     </>
   );
 }

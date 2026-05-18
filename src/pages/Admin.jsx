@@ -2,7 +2,7 @@
 Admin.jsx
 	Entry page for the admin dashboard
 	•	Wraps child components (AdminTopbar, AdminSidebar, tab components) with QueryClientProvider
-	•	Manages tab switching, API base URL, and toast notifications
+  •	Manages tab switching and toast notifications
 	•	Contains AdminApp (state management) and TABS (tab settings)
 	•	Exports adminApi for API calls
 */
@@ -81,16 +81,12 @@ function AdminApp() {
   const navigate = useNavigate();
   const { logout, currentRole, currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState("staff");
-  const [apiBase, setApiBase] = useState(
-    () => localStorage.getItem("timeclock_api_base") || "",
-  );
   const { toast, showToast } = useToast();
 
   const resolvedRole =
     normalizeRole(currentRole || currentUser?.role) || ROLES.WORKER;
   const roleLabel = ROLE_LABELS[resolvedRole] || ROLE_LABELS[ROLES.WORKER];
-  const currentUserName =
-    currentUser?.name || currentUser?.email || "Admin User";
+  void currentUser;
 
   const visibleTabs = useMemo(() => {
     const allowed = new Set(ADMIN_TAB_IDS_BY_ROLE[resolvedRole] || []);
@@ -130,11 +126,7 @@ function AdminApp() {
         }}
       />
 
-      <AdminTopbar
-        apiBase={apiBase}
-        setApiBase={setApiBase}
-        showToast={showToast}
-      />
+      <AdminTopbar />
 
       <Box
         sx={{
