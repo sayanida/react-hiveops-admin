@@ -276,7 +276,7 @@ export default function ExceptionsTab({ showToast }) {
 
       <Box sx={{ mb: 3 }}>
         <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.25 }}>
-          Missed Clock-Out (US-17)
+          Missed Clock-Out
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1.25 }}>
           Staff who clocked in but have no clock-out record for the day.
@@ -357,7 +357,7 @@ export default function ExceptionsTab({ showToast }) {
 
       <Box sx={{ mb: 3 }}>
         <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.25 }}>
-          Unrostered Clock-In (US-21)
+          Unrostered Clock-In
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1.25 }}>
           Workers who clocked in without a roster entry. Clock-in allowed
