@@ -256,8 +256,8 @@ export const mockRegistrations = [
   {
     id: 101,
     staffId: 1,
-    method: "Webcam Face Mock",
-    identifier: "FACE-MOCK-001",
+    method: "Webcam Face",
+    identifier: "FACE-001",
     reason: "New staff",
     active: true,
   },
@@ -272,8 +272,8 @@ export const mockRegistrations = [
   {
     id: 103,
     staffId: 6,
-    method: "Webcam Face Mock",
-    identifier: "FACE-MOCK-006",
+    method: "Webcam Face",
+    identifier: "FACE-006",
     reason: "New staff",
     active: true,
   },
@@ -288,8 +288,8 @@ export const mockRegistrations = [
   {
     id: 105,
     staffId: 12,
-    method: "Webcam Face Mock",
-    identifier: "FACE-MOCK-012",
+    method: "Webcam Face",
+    identifier: "FACE-012",
     reason: "New staff",
     active: true,
   },

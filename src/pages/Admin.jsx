@@ -24,6 +24,7 @@ import ClockingTab from "../tabs/ClockingTab.jsx";
 import RegistrationsTab from "../tabs/RegistrationsTab.jsx";
 import ReportsTab from "../tabs/ReportsTab.jsx";
 import ExceptionsTab from "../tabs/ExceptionsTab.jsx";
+import BreakAlertsTab from "../tabs/BreakAlertsTab.jsx";
 import SettingsTab from "../tabs/SettingsTab.jsx";
 import { useAuth } from "../auth/AuthContext";
 import { ROLES, normalizeRole } from "../auth/roleAccess";
@@ -49,6 +50,7 @@ const TABS = [
     Component: RegistrationsTab,
   },
   { id: "reports", label: "Reports", Component: ReportsTab },
+  { id: "break-alerts", label: "Break Alerts", Component: BreakAlertsTab },
   { id: "exceptions", label: "Exception Reports", Component: ExceptionsTab },
   { id: "settings", label: "Settings", Component: SettingsTab },
 ];
@@ -68,10 +70,17 @@ const ADMIN_TAB_IDS_BY_ROLE = {
     "clocking",
     "registrations",
     "reports",
+    "break-alerts",
     "exceptions",
     "settings",
   ],
-  [ROLES.MANAGER]: ["stations", "clocking", "reports", "exceptions"],
+  [ROLES.MANAGER]: [
+    "stations",
+    "clocking",
+    "reports",
+    "break-alerts",
+    "exceptions",
+  ],
   [ROLES.ROSTER_ADMIN]: ["roster"],
   [ROLES.WORKER]: [],
 };

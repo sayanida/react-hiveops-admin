@@ -63,19 +63,6 @@ const MOCK_UNROSTERED = [
   },
 ];
 
-const MOCK_NO_BREAK = [
-  {
-    id: "b-1",
-    staffId: "EMP-001",
-    name: "John Smith",
-    date: "20 Apr",
-    clockIn: "07:00",
-    station: "South Gate",
-    timeWorked: "5h 14m",
-    breakLogged: "None",
-  },
-];
-
 function nowStamp() {
   return new Date().toLocaleString("en-AU", {
     day: "2-digit",
@@ -93,7 +80,6 @@ export default function ExceptionsTab({ showToast }) {
     MOCK_MISSED_CLOCK_OUT,
   );
   const [unrosteredRows, setUnrosteredRows] = useState(MOCK_UNROSTERED);
-  const [noBreakRows, setNoBreakRows] = useState(MOCK_NO_BREAK);
   const [resolvedNotes, setResolvedNotes] = useState([]);
   const [auditLog, setAuditLog] = useState([]);
 
@@ -116,17 +102,15 @@ export default function ExceptionsTab({ showToast }) {
   });
   const [rosterErrors, setRosterErrors] = useState({});
 
-  const totalOpenCount =
-    missedClockOutRows.length + unrosteredRows.length + noBreakRows.length;
+  const totalOpenCount = missedClockOutRows.length + unrosteredRows.length;
 
   const todaySummary = useMemo(() => {
     return [
       `${missedClockOutRows.length} missed clock-outs`,
       `${unrosteredRows.length} unrostered clock-in`,
-      `${noBreakRows.length} worker reached 5h no break`,
       "End-of-day report sent via email",
     ].join("  ·  ");
-  }, [missedClockOutRows.length, noBreakRows.length, unrosteredRows.length]);
+  }, [missedClockOutRows.length, unrosteredRows.length]);
 
   function appendResolved(message) {
     setResolvedNotes((prev) => [message, ...prev]);
@@ -160,9 +144,6 @@ export default function ExceptionsTab({ showToast }) {
 
     if (ackDialog.section === "unrostered") {
       setUnrosteredRows((prev) => prev.filter((row) => row.id !== record.id));
-    }
-    if (ackDialog.section === "noBreak") {
-      setNoBreakRows((prev) => prev.filter((row) => row.id !== record.id));
     }
     if (ackDialog.section === "missed") {
       setMissedClockOutRows((prev) =>
@@ -450,84 +431,6 @@ export default function ExceptionsTab({ showToast }) {
                       sx={{ py: 0.5 }}
                     >
                       ✓ All unrostered clock-in exceptions resolved.
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : null}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Box>
-
-      <Divider sx={{ my: 2 }} />
-
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.25 }}>
-          5h No Break (US-18)
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.25 }}>
-          Workers who reached 5 hours clocked in with no break logged. Included
-          in end-of-day exception email.
-        </Typography>
-
-        <TableContainer component={Paper} variant="outlined">
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                {[
-                  "Staff",
-                  "Date",
-                  "Clock In",
-                  "Station",
-                  "Time Worked",
-                  "Break Logged",
-                  "Actions",
-                ].map((h) => (
-                  <TableCell key={h} sx={{ fontWeight: 700 }}>
-                    {h}
-                  </TableCell>
-                ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {noBreakRows.map((row) => (
-                <TableRow key={row.id}>
-                  <TableCell>{`${row.staffId} ${row.name}`}</TableCell>
-                  <TableCell>{row.date}</TableCell>
-                  <TableCell>{row.clockIn}</TableCell>
-                  <TableCell>{row.station}</TableCell>
-                  <TableCell>{row.timeWorked}</TableCell>
-                  <TableCell>
-                    <Typography color="error.main" sx={{ fontWeight: 600 }}>
-                      {row.breakLogged}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Stack direction="row" spacing={1}>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        color="inherit"
-                        onClick={() => openAck("noBreak", row)}
-                      >
-                        Acknowledge
-                      </Button>
-                      <Button size="small" variant="outlined" color="inherit">
-                        View Record
-                      </Button>
-                    </Stack>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {noBreakRows.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7}>
-                    <Typography
-                      variant="body2"
-                      color="success.main"
-                      sx={{ py: 0.5 }}
-                    >
-                      ✓ All 5h no-break exceptions resolved.
                     </Typography>
                   </TableCell>
                 </TableRow>

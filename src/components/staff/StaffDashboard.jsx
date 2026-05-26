@@ -10,10 +10,14 @@ import {
   DialogTitle,
   Divider,
   FormControl,
+  FormControlLabel,
   InputLabel,
   MenuItem,
+  Radio,
+  RadioGroup,
   Select,
   Stack,
+  TextField,
   Typography,
 } from "@mui/material";
 import { PanelCard, PrimaryButton, GhostButton } from "../../tabs/shared.jsx";
@@ -46,6 +50,34 @@ const MOCK_TODAY_ROSTER = {
   startTime: "07:00 AM",
   duration: "8 hrs",
 };
+
+const MOCK_ATTENDANCE = {
+  clockInStation: "North Shed",
+  clockOutStation: "East Gate",
+  clockInTime: "07:00 AM",
+  scheduledEnd: "03:00 PM",
+  clockOutTime: "03:00 PM",
+  totalHours: "8 hrs",
+};
+
+const BREAK_REASONS = [
+  { value: "meal", label: "Meal", description: "Scheduled meal break" },
+  { value: "rest", label: "Rest", description: "Short rest break" },
+  { value: "personal", label: "Personal", description: "Personal reason" },
+  { value: "emergency", label: "Emergency", description: "Emergency situation" },
+  { value: "other", label: "Other", description: "Specify below" },
+];
+
+const MOCK_BREAK = {
+  type: "Meal",
+  startTime: "10:00 AM",
+  endTime: "10:32 AM",
+  duration: "32 minutes",
+};
+
+function getBreakReasonLabel(value) {
+  return BREAK_REASONS.find((reason) => reason.value === value)?.label || "Meal";
+}
 
 function KioskActionButton({ children, sx = {}, ...props }) {
   return (
@@ -259,9 +291,531 @@ function TodayRosterPanel({ hasShift, roster }) {
   );
 }
 
+function ClockInPanel() {
+  return (
+    <Box>
+      <Box
+        sx={{
+          p: 2,
+          borderRadius: 1.5,
+          backgroundColor: "#c8e8c8",
+          mb: 3,
+        }}
+      >
+        <Typography sx={{ fontWeight: 700, color: "#1b5e20" }}>
+          ✓ Clock In Recorded
+        </Typography>
+      </Box>
+
+      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
+        Shift Summary
+      </Typography>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" },
+          gap: 2,
+        }}
+      >
+        <RosterInfoCard
+          label="Clock-in Station"
+          value={MOCK_ATTENDANCE.clockInStation}
+        />
+        <RosterInfoCard label="Clock In" value={MOCK_ATTENDANCE.clockInTime} />
+        <RosterInfoCard
+          label="Scheduled End"
+          value={MOCK_ATTENDANCE.scheduledEnd}
+        />
+      </Box>
+    </Box>
+  );
+}
+
+function ClockOutPanel() {
+  return (
+    <Box>
+      <Box
+        sx={{
+          p: 2,
+          borderRadius: 1.5,
+          backgroundColor: "#c8e8c8",
+          mb: 3,
+        }}
+      >
+        <Typography sx={{ fontWeight: 700, color: "#1b5e20" }}>
+          ✓ Clock Out Recorded
+        </Typography>
+      </Box>
+
+      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
+        Shift Summary
+      </Typography>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" },
+          gap: 2,
+          mb: 2,
+        }}
+      >
+        <RosterInfoCard
+          label="Clock-in Station"
+          value={MOCK_ATTENDANCE.clockInStation}
+        />
+        <RosterInfoCard
+          label="Clock-out Station"
+          value={MOCK_ATTENDANCE.clockOutStation}
+        />
+        <RosterInfoCard label="Clock In" value={MOCK_ATTENDANCE.clockInTime} />
+        <RosterInfoCard label="Clock Out" value={MOCK_ATTENDANCE.clockOutTime} />
+        <RosterInfoCard label="Total Hours" value={MOCK_ATTENDANCE.totalHours} />
+      </Box>
+
+      <Box
+        sx={{
+          p: 2,
+          borderRadius: 1.5,
+          backgroundColor: "#fff4d6",
+          border: "1px solid",
+          borderColor: "#f1d58a",
+        }}
+      >
+        <Typography sx={{ fontWeight: 700, color: "#c47a00", mb: 0.5 }}>
+          ℹ️ Cross-station clock-out detected
+        </Typography>
+
+        <Typography variant="body2" sx={{ color: "#6d4c00" }}>
+          Clock-in station ({MOCK_ATTENDANCE.clockInStation}) and clock-out
+          station ({MOCK_ATTENDANCE.clockOutStation}) have both been recorded
+          with your attendance entry.
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
+function StartBreakPanel({
+  selectedReason,
+  setSelectedReason,
+  breakNote,
+  setBreakNote,
+  onConfirm,
+  onCancel,
+}) {
+  return (
+    <Box>
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
+        Select Break Reason
+      </Typography>
+
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
+        Choose the reason for your break before starting.
+      </Typography>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" },
+          gap: 2,
+          mb: 2,
+        }}
+      >
+        {BREAK_REASONS.map((reason) => {
+          const isSelected = selectedReason === reason.value;
+
+          return (
+            <Box
+              key={reason.value}
+              onClick={() => setSelectedReason(reason.value)}
+              sx={{
+                position: "relative",
+                p: 2,
+                minHeight: 92,
+                borderRadius: 1.5,
+                cursor: "pointer",
+                backgroundColor: isSelected ? "#e7f4e8" : "#f3efe9",
+                border: "2px solid",
+                borderColor: isSelected ? "#2f8a3d" : "transparent",
+                "&:hover": {
+                  borderColor: "#2f8a3d",
+                },
+              }}
+            >
+              {isSelected ? (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: 10,
+                    right: 10,
+                    width: 20,
+                    height: 20,
+                    borderRadius: "50%",
+                    bgcolor: "#2f8a3d",
+                    color: "#fff",
+                    display: "grid",
+                    placeItems: "center",
+                    fontSize: 13,
+                    fontWeight: 700,
+                  }}
+                >
+                  ✓
+                </Box>
+              ) : null}
+
+              <Typography sx={{ fontWeight: 700, mb: 0.5 }}>
+                {reason.label}
+              </Typography>
+
+              <Typography variant="body2" color="text.secondary">
+                {reason.description}
+              </Typography>
+            </Box>
+          );
+        })}
+      </Box>
+
+      <TextField
+        fullWidth
+        label="Additional note"
+        placeholder="e.g. Doctor's appointment"
+        value={breakNote}
+        onChange={(event) => setBreakNote(event.target.value)}
+        helperText="Required only when Other is selected"
+        sx={{ mb: 2 }}
+      />
+
+      <Stack direction="row" spacing={2}>
+        <PrimaryButton
+          onClick={onConfirm}
+          sx={{
+            width: 220,
+            py: 1.2,
+            backgroundColor: "#2f8a3d",
+            textTransform: "none",
+            fontWeight: 700,
+            "&:hover": { backgroundColor: "#277434" },
+            color: "#ffffff",
+          }}
+        >
+          Start Break
+        </PrimaryButton>
+
+        <GhostButton
+          onClick={onCancel}
+          sx={{ width: 160, py: 1.2, textTransform: "none" }}
+        >
+          Cancel
+        </GhostButton>
+      </Stack>
+    </Box>
+  );
+}
+
+function BreakStartedPanel({ selectedReason }) {
+  return (
+    <Box>
+      <Box
+        sx={{
+          p: 2,
+          borderRadius: 1.5,
+          backgroundColor: "#c8e8c8",
+          mb: 3,
+        }}
+      >
+        <Typography sx={{ fontWeight: 700, color: "#1b5e20" }}>
+          ✓ Break Started
+        </Typography>
+      </Box>
+
+      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
+        Break Summary
+      </Typography>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" },
+          gap: 2,
+          mb: 2,
+        }}
+      >
+        <RosterInfoCard
+          label="Break Type"
+          value={getBreakReasonLabel(selectedReason)}
+        />
+        <RosterInfoCard label="Break Start" value={MOCK_BREAK.startTime} />
+      </Box>
+
+      <Typography variant="body2" color="text.secondary">
+        When the worker returns, select End Break to record the end time and
+        calculate the break duration.
+      </Typography>
+    </Box>
+  );
+}
+
+function EndBreakPanel({ selectedReason, onConfirm, onCancel }) {
+  return (
+    <Box>
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
+        End Break
+      </Typography>
+
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
+        Your break end time will be recorded and duration calculated.
+      </Typography>
+
+      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
+        Break Summary
+      </Typography>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "repeat(4, minmax(0, 1fr))" },
+          gap: 2,
+          mb: 4,
+        }}
+      >
+        <RosterInfoCard
+          label="Break Type"
+          value={getBreakReasonLabel(selectedReason)}
+        />
+        <RosterInfoCard label="Break Start" value={MOCK_BREAK.startTime} />
+        <RosterInfoCard label="Break End" value={MOCK_BREAK.endTime} />
+        <RosterInfoCard label="Duration" value={MOCK_BREAK.duration} />
+      </Box>
+
+      <Stack direction="row" spacing={2}>
+        <PrimaryButton
+          onClick={onConfirm}
+          sx={{
+            width: 260,
+            py: 1.2,
+            backgroundColor: "#2f8a3d",
+            textTransform: "none",
+            fontWeight: 700,
+            "&:hover": { backgroundColor: "#277434" },
+            color: "#ffffff",
+          }}
+        >
+          Confirm End Break
+        </PrimaryButton>
+
+        <GhostButton
+          onClick={onCancel}
+          sx={{ width: 160, py: 1.2, textTransform: "none" }}
+        >
+          Cancel
+        </GhostButton>
+      </Stack>
+    </Box>
+  );
+}
+
+function SupervisorAssistancePanel({ onConfirm, onCancel }) {
+  const [supervisorPin, setSupervisorPin] = useState("");
+  const keypadItems = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "←", "0", "✓"];
+
+  const handlePinPress = (item) => {
+    if (item === "←") {
+      setSupervisorPin((currentPin) => currentPin.slice(0, -1));
+      return;
+    }
+
+    if (item === "✓") {
+      return;
+    }
+
+    setSupervisorPin((currentPin) => {
+      if (currentPin.length >= 4) return currentPin;
+      return currentPin + item;
+    });
+  };
+
+  return (
+    <Box>
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
+        Supervisor Assistance
+      </Typography>
+
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        Override clock in or out on behalf of this worker.
+      </Typography>
+
+      <Divider sx={{ mb: 2 }} />
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "320px 1fr" },
+          gap: 4,
+          alignItems: "stretch",
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+          }}
+        >
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            Supervisor PIN
+          </Typography>
+
+          <Typography variant="caption" color="text.secondary">
+            Enter your 4-digit PIN to authorise.
+          </Typography>
+
+          <Box
+            sx={{
+              mt: 1,
+              mb: 1.5,
+              height: 48,
+              borderRadius: 1.5,
+              backgroundColor: "#eeeeee",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 1,
+            }}
+          >
+            {supervisorPin.split("").map((_, dotIndex) => (
+              <Box
+                key={dotIndex}
+                sx={{
+                  width: 9,
+                  height: 9,
+                  borderRadius: "50%",
+                  backgroundColor: "#6b6b6b",
+                }}
+              />
+            ))}
+          </Box>
+
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gridTemplateRows: "repeat(4, 1fr)",
+              gap: 1,
+              flexGrow: 1,
+              minHeight: 210,
+            }}
+          >
+            {keypadItems.map((item) => {
+              const isBack = item === "←";
+              const isConfirm = item === "✓";
+
+              return (
+                <Box
+                  key={item}
+                  component="button"
+                  type="button"
+                  onClick={() => handlePinPress(item)}
+                  sx={{
+                    height: "100%",
+                    minHeight: 52,
+                    border: "none",
+                    borderRadius: 1.5,
+                    cursor: "pointer",
+                    fontWeight: 700,
+                    fontSize: 18,
+                    backgroundColor: isBack
+                    ? "#f57c00"
+                    : isConfirm
+                    ? "#2f8a3d"
+                    : "#f2f2f2",
+                    color: isBack || isConfirm ? "#ffffff" : "#222222",
+                    "&:hover": {
+                      opacity: 0.9,
+                    },
+                  }}
+                >
+                  {item}
+                </Box>
+              );
+            })}
+          </Box>
+        </Box>
+
+        <Box>
+          <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
+            Override Details
+          </Typography>
+
+          <TextField
+            fullWidth
+            size="small"
+            label="Worker"
+            value={`${MOCK_WORKER.name} (${MOCK_WORKER.id})`}
+            InputProps={{ readOnly: true }}
+            sx={{ mb: 2 }}
+          />
+
+          <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+            Action *
+          </Typography>
+
+          <RadioGroup row defaultValue="clock-in" sx={{ mb: 2 }}>
+            <FormControlLabel
+              value="clock-in"
+              control={<Radio size="small" />}
+              label="Clock In"
+            />
+            <FormControlLabel
+              value="clock-out"
+              control={<Radio size="small" />}
+              label="Clock Out"
+            />
+          </RadioGroup>
+
+          <TextField
+            fullWidth
+            multiline
+            minRows={4}
+            label="Reason *"
+            defaultValue="Worker's keycard failed. Device confirmed faulty. Supervisor authorising manual clock-in."
+            sx={{ mb: 3 }}
+          />
+
+          <Stack direction="row" spacing={2}>
+            <PrimaryButton
+              onClick={onConfirm}
+              sx={{
+                width: 260,
+                py: 1.2,
+                backgroundColor: "#9b3440",
+                textTransform: "none",
+                fontWeight: 700,
+                "&:hover": { backgroundColor: "#852d37" },
+                color: "#ffffff"
+              }}
+            >
+              Confirm
+            </PrimaryButton>
+
+            <GhostButton
+              onClick={onCancel}
+              sx={{ width: 160, py: 1.2, textTransform: "none" }}
+            >
+              Cancel
+            </GhostButton>
+          </Stack>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
 function IdentifiedState({
   selectedReason,
   setSelectedReason,
+  breakNote,
+  setBreakNote,
   activePanel,
   onAction,
   onEndSession,
@@ -281,6 +835,8 @@ function IdentifiedState({
         <Stack spacing={2}>
           <Box sx={{ textAlign: "center" }}>
             <Avatar
+              src={frodoProfile}
+              alt={MOCK_WORKER.name}
               sx={{
                 width: 88,
                 height: 88,
@@ -365,22 +921,6 @@ function IdentifiedState({
             </KioskActionButton>
           </Box>
 
-          <FormControl fullWidth size="small">
-            <InputLabel id="break-reason-select-label">Break Reason</InputLabel>
-            <Select
-              labelId="break-reason-select-label"
-              value={selectedReason}
-              label="Break Reason"
-              onChange={(e) => setSelectedReason(e.target.value)}
-            >
-              <MenuItem value="meal">Meal</MenuItem>
-              <MenuItem value="hydration">Hydration</MenuItem>
-              <MenuItem value="equipment">Equipment Issue</MenuItem>
-              <MenuItem value="weather">Weather Delay</MenuItem>
-              <MenuItem value="other">Other</MenuItem>
-            </Select>
-          </FormControl>
-
           <KioskActionButton
             onClick={() => onAction("roster")}
             sx={{
@@ -393,14 +933,14 @@ function IdentifiedState({
           </KioskActionButton>
 
           <KioskActionButton
-            onClick={() => onAction("supervisor-override")}
+            onClick={() => onAction("supervisor-assistance")}
             sx={{
-              backgroundColor: "#d9d4cd",
-              color: "#585047",
-              "&:hover": { backgroundColor: "#cbc5bd" },
+              backgroundColor: "#858585",
+              color: "#ffffff",
+              "&:hover": { backgroundColor: "#aeaeae" },
             }}
           >
-            Supervisor Override
+            Supervisor Assistance
           </KioskActionButton>
 
           <Divider />
@@ -453,15 +993,32 @@ function IdentifiedState({
           </Box>
         ) : activePanel === "roster" ? (
           <TodayRosterPanel hasShift={hasShift} roster={roster} />
-        ) : activePanel === "supervisor-override" ? (
-          <Box>
-            <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
-              Supervisor Override
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Placeholder panel for Task 120 layout.
-            </Typography>
-          </Box>
+        ) : activePanel === "clock-in" ? (
+          <ClockInPanel />
+        ) : activePanel === "clock-out" ? (
+          <ClockOutPanel />
+        ) : activePanel === "start-break" ? (
+          <StartBreakPanel
+            selectedReason={selectedReason}
+            setSelectedReason={setSelectedReason}
+            breakNote={breakNote}
+            setBreakNote={setBreakNote}
+            onConfirm={() => onAction("break-started")}
+            onCancel={() => onAction("roster")}
+          />
+        ) : activePanel === "break-started" ? (
+          <BreakStartedPanel selectedReason={selectedReason} />
+        ) : activePanel === "end-break" ? (
+          <EndBreakPanel
+            selectedReason={selectedReason}
+            onConfirm={() => onAction("roster")}
+            onCancel={() => onAction("break-started")}
+          />
+        ) : activePanel === "supervisor-assistance" ? (
+          <SupervisorAssistancePanel
+            onConfirm={() => onAction("roster")}
+            onCancel={() => onAction("roster")}
+          />
         ) : (
           <Box>
             <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
@@ -596,7 +1153,8 @@ export default function StaffDashboard({
 }) {
   const [screen, setScreen] = useState("idle");
   const [selectedMethod, setSelectedMethod] = useState("face");
-  const [selectedReason, setSelectedReason] = useState("");
+  const [selectedReason, setSelectedReason] = useState("meal");
+  const [breakNote, setBreakNote] = useState("");
   const [activePanel, setActivePanel] = useState("");
 
     // ─── Task 123 webcam PoC state ─────────────────────────────────────────────
@@ -620,7 +1178,8 @@ export default function StaffDashboard({
 
   const handleEndSession = () => {
     setScreen("idle");
-    setSelectedReason("");
+    setSelectedReason("meal");
+    setBreakNote("");
     setActivePanel("");
     onSessionEnd?.();
     showToast?.("Session ended.");
@@ -726,6 +1285,8 @@ export default function StaffDashboard({
         <IdentifiedState
           selectedReason={selectedReason}
           setSelectedReason={setSelectedReason}
+          breakNote={breakNote}
+          setBreakNote={setBreakNote}
           activePanel={activePanel}
           onAction={handleAction}
           onEndSession={handleEndSession}
