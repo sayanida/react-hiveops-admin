@@ -9,7 +9,7 @@ Admin.tsx
 
 import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Alert, Box, Grid } from "@mui/material";
+import { Alert, Box } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import useToast from "../hooks/useToast";
 import Toast from "../components/common/Toast";
@@ -133,7 +133,15 @@ function AdminApp(): JSX.Element {
   )?.Component;
 
   return (
-    <Box sx={{ minHeight: "100vh", position: "relative", overflow: "hidden" }}>
+    <Box
+      sx={{
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        position: "relative",
+      }}
+    >
       <Box
         sx={{
           position: "fixed",
@@ -162,36 +170,55 @@ function AdminApp(): JSX.Element {
 
       <Box
         sx={{
+          flex: 1,
+          overflow: "hidden",
+          display: "flex",
           position: "relative",
           zIndex: 1,
-          px: { xs: 2, md: 4, lg: 5 },
-          pt: 0,
-          pb: 5,
-          mt: { xs: 2, md: 3 },
         }}
       >
-        <Box sx={{ width: "100%", maxWidth: "1440px", mx: "auto" }}>
-          <Grid container spacing={3} alignItems="flex-start">
-            <Grid size={{ xs: 12, md: 3, lg: 2.7 }}>
-              <AdminSidebar
-                tabs={visibleTabs}
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-                onLogout={handleLogout}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 9, lg: 9.3 }}>
-              {ActiveComponent ? (
-                <Box sx={{ display: "grid", gap: 2.5 }}>
-                  <ActiveComponent showToast={showToast} />
-                </Box>
-              ) : (
-                <Alert severity="info" sx={{ borderRadius: 4 }}>
-                  {roleLabel} has no Admin Portal navigation items in UI mode.
-                </Alert>
-              )}
-            </Grid>
-          </Grid>
+        <Box
+          sx={{
+            flex: 1,
+            display: "flex",
+            maxWidth: "1440px",
+            mx: "auto",
+            width: "100%",
+            px: { xs: 2, md: 4, lg: 5 },
+            pt: { xs: 2, md: 3 },
+            gap: 3,
+            overflow: "hidden",
+          }}
+        >
+          <Box
+            sx={{
+              display: { xs: "none", md: "flex" },
+              flexDirection: "column",
+              flexShrink: 0,
+              width: { md: "24%", lg: "22%" },
+              overflowY: "auto",
+              pb: 5,
+            }}
+          >
+            <AdminSidebar
+              tabs={visibleTabs}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              onLogout={handleLogout}
+            />
+          </Box>
+
+          <Box sx={{ flex: 1, overflowY: "auto", pb: 5 }}>
+            {ActiveComponent ? (
+              <Box sx={{ display: "grid", gap: 2.5 }}>
+                <ActiveComponent showToast={showToast} />
+              </Box>
+            ) : (
+              <Alert severity="info" sx={{ borderRadius: 4 }}>
+                {roleLabel} has no Admin Portal navigation items in UI mode.
+              </Alert>
+            )}
+          </Box>
         </Box>
       </Box>
 

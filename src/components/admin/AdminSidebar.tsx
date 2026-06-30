@@ -6,7 +6,7 @@ AdminSidebar.tsx
   • Props: array of tabs, current active tab ID, tab switch function
 */
 
-import { Box, Button, Divider, Paper, Stack, Typography } from "@mui/material";
+import { Box, Button, Divider, Stack } from "@mui/material";
 
 interface SidebarTab {
   id: string;
@@ -27,29 +27,8 @@ export default function AdminSidebar({
   onLogout,
 }: AdminSidebarProps): JSX.Element {
   return (
-    <Paper
-      variant="outlined"
-      sx={{
-        p: 2,
-        borderRadius: 2,
-        position: { md: "sticky" },
-        top: { md: 108 },
-        background:
-          "linear-gradient(180deg, rgba(251, 253, 255, 0.94) 0%, rgba(244, 249, 253, 0.98) 100%)",
-        boxShadow: "0 20px 45px rgba(10, 38, 67, 0.08)",
-        backdropFilter: "blur(20px)",
-      }}
-    >
+    <Box sx={{ p: 1, height: "100%" }}>
       <Stack spacing={1.25} sx={{ minHeight: "100%" }}>
-        <Box sx={{ px: 1, pb: 0.5 }}>
-          <Typography variant="overline" color="text.secondary">
-            Navigation
-          </Typography>
-          <Typography variant="h6" sx={{ mt: 0.25 }}>
-            Admin Console
-          </Typography>
-        </Box>
-
         {tabs.length === 0 ? (
           <Typography
             variant="body2"
@@ -81,7 +60,7 @@ export default function AdminSidebar({
                   ? "transparent"
                   : "rgba(15, 76, 129, 0.08)",
                 boxShadow: isActive
-                  ? "0 16px 32px rgba(15, 76, 129, 0.24)"
+                  ? "0 2px 8px rgba(15, 76, 129, 0.22)"
                   : "none",
                 "&:hover": {
                   bgcolor: isActive
@@ -112,6 +91,6 @@ export default function AdminSidebar({
           Logout
         </Button>
       </Stack>
-    </Paper>
+    </Box>
   );
 }
