@@ -1,5 +1,11 @@
 # Beerenberg Workforce Ops Console
 
+**Project:** _HiveOps Admin Console_  
+**Version:** 2.0  
+**Author:** Saya Yoshida  
+**Date:** [30 June 2026]  
+**Live Demo:**　https://sayanida.github.io/react-hiveops-admin/
+
 An admin operations console for workforce and attendance management, built with React and Material UI.
 
 Originally started as a group project assignment. I independently redesigned and extended the Admin portal into a standalone application — implementing features from given requirements, designing the UI from scratch, and refactoring the architecture to be Admin-focused.
@@ -27,11 +33,17 @@ This app provides a role-based admin dashboard for managing staff, rostering, cl
 | UI Framework      | [React 19](https://react.dev)                            |
 | Component Library | [MUI (Material UI) v7](https://mui.com)                  |
 | Build Tool        | [Vite](https://vitejs.dev)                               |
-| Language          | JavaScript (JSX)                                         |
+| Language          | TypeScript (TS/TSX)                                      |
 | Data Fetching     | [TanStack Query v5](https://tanstack.com/query)          |
 | HTTP Client       | [Axios](https://axios-http.com)                          |
 | Routing           | [React Router v7](https://reactrouter.com)               |
 | Mock API          | [JSON Server](https://www.npmjs.com/package/json-server) |
+
+### TypeScript migration status
+
+- The Admin app has been migrated from JS/JSX to TS/TSX.
+- Core app pages, tabs, shared UI primitives, auth, and role navigation now use TypeScript.
+- Old JS/JSX duplicates used during migration have been removed.
 
 ---
 
@@ -280,7 +292,11 @@ App runs at **http://localhost:5173** — navigate to `/admin` to start.
 npx json-server --watch db.json --routes routes.json --port 3001
 ```
 
-Then set the API Base URL field in the top-right of the Admin dashboard to `http://localhost:3001`.
+After starting the mock API:
+
+1. Open the Admin screen.
+2. In the API Base URL input at the bottom-right, enter `http://localhost:3001`.
+3. Click Save.
 
 Files:
 
@@ -293,42 +309,42 @@ Files:
 
 ```
 src/
-├── main.jsx                   # App entry point + routing
-├── theme.js                   # MUI theme configuration
+├── main.tsx                   # App entry point + routing
+├── theme.ts                   # MUI theme configuration
 ├── access/
-│   └── uiRoleNavigation.js    # Role-to-tab access control
+│   └── uiRoleNavigation.ts    # Role-to-tab access control
 ├── auth/
-│   ├── AuthContext.jsx        # Auth state provider
-│   ├── authStorage.js         # Session persistence
-│   └── roleAccess.js          # Role constants and helpers
+│   ├── AuthContext.tsx        # Auth state provider
+│   ├── authStorage.ts         # Session persistence
+│   └── roleAccess.ts          # Role constants and helpers
 ├── components/
 │   ├── admin/
-│   │   ├── AdminSidebar.jsx
-│   │   └── AdminTopbar.jsx
+│   │   ├── AdminSidebar.tsx
+│   │   └── AdminTopbar.tsx
 │   └── common/
-│       ├── ApiConfigBar.jsx
-│       └── Toast.jsx
+│       ├── ApiConfigBar.tsx
+│       └── Toast.tsx
 ├── hooks/
-│   └── useToast.js
+│   └── useToast.ts
 ├── mocks/
-│   └── staffAdminMockData.js
+│   └── staffAdminMockData.ts
 ├── pages/
-│   ├── Admin.jsx              # Admin dashboard entry
-│   ├── Login.jsx
-│   └── Unauthorized.jsx
+│   ├── Admin.tsx              # Admin dashboard entry
+│   ├── Login.tsx
+│   └── Unauthorized.tsx
 ├── tabs/
-│   ├── shared.jsx             # Shared UI components
-│   ├── StaffTab.jsx
-│   ├── RosterTab.jsx
-│   ├── StationsTab.jsx
-│   ├── ClockingTab.jsx
-│   ├── RegistrationsTab.jsx
-│   ├── ReportsTab.jsx
-│   ├── BreakAlertsTab.jsx
-│   ├── ExceptionsTab.jsx
-│   └── SettingsTab.jsx
+│   ├── shared.tsx             # Shared UI components
+│   ├── StaffTab.tsx
+│   ├── RosterTab.tsx
+│   ├── StationsTab.tsx
+│   ├── ClockingTab.tsx
+│   ├── RegistrationsTab.tsx
+│   ├── ReportsTab.tsx
+│   ├── BreakAlertsTab.tsx
+│   ├── ExceptionsTab.tsx
+│   └── SettingsTab.tsx
 └── utils/
-    └── api.js
+    └── api.ts
 ```
 
 ---

@@ -1,5 +1,5 @@
 /*
-api.js
+api.ts
 	Helper for creating Axios clients.
 	•	Read API base URL from localStorage and set it for requests
 	•	Reject requests if the base URL is not set; log and re-throw response errors
@@ -8,9 +8,12 @@ api.js
   Notes: Standardizes API access and error handling
 */
 
-import axios from "axios";
+import axios, { AxiosInstance, InternalAxiosRequestConfig } from "axios";
 
-function resolveBaseUrl(storageKeys, fallbackBase = "") {
+function resolveBaseUrl(
+  storageKeys: string | string[],
+  fallbackBase: string = "",
+): string {
   const keys = Array.isArray(storageKeys) ? storageKeys : [storageKeys];
 
   for (const key of keys) {
@@ -21,12 +24,15 @@ function resolveBaseUrl(storageKeys, fallbackBase = "") {
   return fallbackBase ? fallbackBase.replace(/\/$/, "") : "";
 }
 
-function createApiClient(storageKeys, fallbackBase = "") {
+function createApiClient(
+  storageKeys: string | string[],
+  fallbackBase: string = "",
+): AxiosInstance {
   const client = axios.create({
     headers: { "Content-Type": "application/json" },
   });
 
-  client.interceptors.request.use((config) => {
+  client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     const base = resolveBaseUrl(storageKeys, fallbackBase);
 
     if (!base) {
@@ -39,8 +45,12 @@ function createApiClient(storageKeys, fallbackBase = "") {
 
   client.interceptors.response.use(
     (res) => res,
-    (err) => {
-      console.error("API error:", err.response?.status, err.message);
+    (err: unknown) => {
+      if (axios.isAxiosError(err)) {
+        console.error("API error:", err.response?.status, err.message);
+      } else {
+        console.error("Unexpected error:", err);
+      }
       return Promise.reject(err);
     },
   );
@@ -57,8 +67,3 @@ export const authApi = createApiClient(
   ["timeclock_api_base", "farm_staff_api_base"],
   "http://localhost:8080",
 );
-
-export async function loginUser(payload) {
-  const { data } = await authApi.post("/auth/login", payload);
-  return data;
-}

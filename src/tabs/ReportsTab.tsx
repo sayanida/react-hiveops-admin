@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Alert, Box, Button, Stack, Typography } from "@mui/material";
-import { adminApi as api } from "../utils/api.js";
+import { adminApi as api } from "../utils/api";
 import {
   normalizeList,
   DataTable,
@@ -12,7 +12,7 @@ import {
   PanelCard,
   PrimaryButton,
   TwoColumn,
-} from "./shared.jsx";
+} from "./shared";
 
 function buildCsvFromRows(rows) {
   if (!rows.length) return "";

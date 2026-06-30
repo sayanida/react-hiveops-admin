@@ -14,10 +14,10 @@ Staff.jsx
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Box } from "@mui/material";
-import useToast from "../hooks/useToast.js";
-import Toast from "../components/common/Toast.jsx";
-import StaffTopbar from "../components/staff/StaffTopbar.jsx";
-import StaffDashboard from "../components/staff/StaffDashboard.jsx";
+import useToast from "../hooks/useToast";
+import Toast from "../components/common/Toast";
+import StaffTopbar from "../components/staff/StaffTopbar";
+import StaffDashboard from "../components/staff/StaffDashboard";
 
 // ─── QueryClient ──────────────────────────────────────────────────────────────
 const queryClient = new QueryClient({
@@ -44,7 +44,10 @@ function StaffApp() {
         }}
       />
 
-      <StaffTopbar showUserIdentity={isStaffSessionActive} />
+      <StaffTopbar
+        showUserIdentity={isStaffSessionActive}
+        showToast={showToast}
+      />
 
       <StaffDashboard
         showToast={showToast}

@@ -9,7 +9,6 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
-  IconButton,
   Paper,
   Stack,
   Table,
@@ -21,9 +20,8 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
-import { useAuth } from "../auth/AuthContext.jsx";
-import { PageHeader } from "./shared.jsx";
+import { useAuth } from "../auth/AuthContext";
+import { GhostButton, PageHeader, PrimaryButton } from "./shared";
 
 const HEADER_BG = "#9b3440";
 
@@ -246,16 +244,6 @@ export default function ExceptionsTab({ showToast }) {
 
     showToast?.("Approved amendment detected. Missed clock-out removed.");
   }
-
-  const dialogHeaderSx = {
-    bgcolor: HEADER_BG,
-    color: "common.white",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    py: 1.5,
-    px: 2.5,
-  };
 
   return (
     <div>
@@ -484,21 +472,8 @@ export default function ExceptionsTab({ showToast }) {
       </Box>
 
       {/* Acknowledge & Resolve */}
-      <Dialog
-        open={ackDialog.open}
-        onClose={closeAck}
-        fullWidth
-        maxWidth="sm"
-        PaperProps={{ sx: { borderRadius: 2, overflow: "hidden" } }}
-      >
-        <DialogTitle sx={dialogHeaderSx}>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            Acknowledge Exception
-          </Typography>
-          <IconButton onClick={closeAck} sx={{ color: "common.white" }}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
+      <Dialog open={ackDialog.open} onClose={closeAck} fullWidth maxWidth="sm">
+        <DialogTitle>Acknowledge Exception</DialogTitle>
         <DialogContent dividers sx={{ pt: 2.5 }}>
           {ackDialog.record ? (
             <Paper variant="outlined" sx={{ p: 2, mb: 2, bgcolor: "grey.50" }}>
@@ -535,23 +510,13 @@ export default function ExceptionsTab({ showToast }) {
             reason will be recorded in the audit log.
           </Alert>
         </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2, justifyContent: "space-between" }}>
-          <Button
-            variant="contained"
-            disableElevation
-            onClick={resolveByAcknowledge}
-            sx={{
-              textTransform: "none",
-              fontWeight: 700,
-              bgcolor: HEADER_BG,
-              "&:hover": { bgcolor: "#7d2834" },
-            }}
-          >
-            Acknowledge &amp; Resolve
-          </Button>
-          <Button variant="outlined" color="inherit" onClick={closeAck}>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <GhostButton type="button" onClick={closeAck}>
             Cancel
-          </Button>
+          </GhostButton>
+          <PrimaryButton type="button" onClick={resolveByAcknowledge}>
+            Acknowledge &amp; Resolve
+          </PrimaryButton>
         </DialogActions>
       </Dialog>
 
@@ -561,16 +526,8 @@ export default function ExceptionsTab({ showToast }) {
         onClose={closeRoster}
         fullWidth
         maxWidth="md"
-        PaperProps={{ sx: { borderRadius: 2, overflow: "hidden" } }}
       >
-        <DialogTitle sx={dialogHeaderSx}>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            Add Retrospective Roster Entry
-          </Typography>
-          <IconButton onClick={closeRoster} sx={{ color: "common.white" }}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
+        <DialogTitle>Add Retrospective Roster Entry</DialogTitle>
         <DialogContent dividers sx={{ pt: 2.5 }}>
           {rosterDialog.record ? (
             <Paper variant="outlined" sx={{ p: 2, mb: 2, bgcolor: "grey.50" }}>
@@ -643,23 +600,13 @@ export default function ExceptionsTab({ showToast }) {
             log.
           </Alert>
         </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2, justifyContent: "space-between" }}>
-          <Button
-            variant="contained"
-            disableElevation
-            onClick={resolveByRetrospectiveRoster}
-            sx={{
-              textTransform: "none",
-              fontWeight: 700,
-              bgcolor: HEADER_BG,
-              "&:hover": { bgcolor: "#7d2834" },
-            }}
-          >
-            Add Roster &amp; Resolve
-          </Button>
-          <Button variant="outlined" color="inherit" onClick={closeRoster}>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <GhostButton type="button" onClick={closeRoster}>
             Cancel
-          </Button>
+          </GhostButton>
+          <PrimaryButton type="button" onClick={resolveByRetrospectiveRoster}>
+            Add Roster &amp; Resolve
+          </PrimaryButton>
         </DialogActions>
       </Dialog>
     </div>

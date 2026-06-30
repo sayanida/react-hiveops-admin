@@ -19,14 +19,14 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { adminApi as api } from "../utils/api.js";
+import { adminApi as api } from "../utils/api";
 import {
   PageHeader,
   PanelCard,
   FormActions,
   PrimaryButton,
   GhostButton,
-} from "./shared.jsx";
+} from "./shared";
 
 const DEFAULT_DAILY_OVERTIME_HOURS = 8;
 const DEFAULT_WEEKLY_OVERTIME_HOURS = 38;

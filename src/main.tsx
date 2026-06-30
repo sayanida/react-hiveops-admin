@@ -1,5 +1,5 @@
 /*
-Main.jsx
+Main.tsx
 	The entry point of the app, mounts React to the DOM.
 	•	Apply MUI theme (ThemeProvider) and global CSS reset (CssBaseline)
 	•	Define routes (/, /admin) and set default redirect (/ → /admin)
@@ -8,23 +8,22 @@ Notes: Usually this file is not modified
   - serves as the foundation of the app
 */
 
-import { StrictMode } from "react";
+import { StrictMode, ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider, CssBaseline } from "@mui/material";
-import Admin from "./pages/Admin.jsx";
-import Login from "./pages/Login.jsx";
-import Unauthorized from "./pages/Unauthorized.jsx";
-import theme from "./theme.js";
+import Admin from "./pages/Admin";
+import Login from "./pages/Login";
+import Unauthorized from "./pages/Unauthorized";
+import theme from "./theme";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import {
   ADMIN_ROLES,
-  ROLES,
   getDefaultPathForRole,
   hasAllowedRole,
 } from "./auth/roleAccess";
 
-function HomeRedirect() {
+function HomeRedirect(): ReactNode {
   const { isAuthenticated, currentRole, currentUser } = useAuth();
   const role = currentRole || currentUser?.role;
 
@@ -36,7 +35,7 @@ function HomeRedirect() {
   );
 }
 
-function LoginRoute() {
+function LoginRoute(): ReactNode {
   const { isAuthenticated, currentRole, currentUser } = useAuth();
   const role = currentRole || currentUser?.role;
 
@@ -47,7 +46,15 @@ function LoginRoute() {
   );
 }
 
-function ProtectedRoute({ allowedRoles, children }) {
+interface ProtectedRouteProps {
+  allowedRoles: string[];
+  children: ReactNode;
+}
+
+function ProtectedRoute({
+  allowedRoles,
+  children,
+}: ProtectedRouteProps): ReactNode {
   const { isAuthenticated, currentRole, currentUser } = useAuth();
   const role = currentRole || currentUser?.role;
 
@@ -62,7 +69,7 @@ function ProtectedRoute({ allowedRoles, children }) {
   return children;
 }
 
-function AppRoutes() {
+function AppRoutes(): ReactNode {
   return (
     <Routes>
       <Route path="/" element={<HomeRedirect />} />
@@ -83,7 +90,10 @@ function AppRoutes() {
   );
 }
 
-createRoot(document.getElementById("root")).render(
+const rootElement = document.getElementById("root");
+if (!rootElement) throw new Error("Root element not found");
+
+createRoot(rootElement).render(
   <StrictMode>
     <ThemeProvider theme={theme}>
       <CssBaseline />

@@ -24,14 +24,9 @@ import {
   Typography,
 } from "@mui/material";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
-import { useAuth } from "../auth/AuthContext.jsx";
-import { mockStaffRows } from "../mocks/staffAdminMockData.js";
-import {
-  GhostButton,
-  normalizeList,
-  PageHeader,
-  PanelCard,
-} from "./shared.jsx";
+import { useAuth } from "../auth/AuthContext";
+import { mockStaffRows } from "../mocks/staffAdminMockData";
+import { GhostButton, normalizeList, PageHeader, PanelCard } from "./shared";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const HEADER_BG = "#9b3440";
@@ -43,7 +38,7 @@ const INITIAL_AMENDMENTS = [
     staffName: "John K.",
     action: "Clock In",
     dateTime: "20 Apr  14:35",
-    submittedByName: "Saya Yoshida (Admin)",
+    submittedByName: "Sayanida (Admin)",
     submittedById: "A-001",
     reason: "Worker's keycard failed at North Shed.",
     status: "PENDING",
@@ -582,7 +577,8 @@ export default function ClockingTab({ showToast }) {
                               color="text.disabled"
                               sx={{ fontStyle: "italic" }}
                             >
-                              Cannot approve
+                              Cannot approve. Approval by another admin user is
+                              required.
                             </Typography>
                             <GhostButton
                               type="button"

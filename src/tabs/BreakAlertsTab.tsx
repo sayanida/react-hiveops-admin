@@ -15,8 +15,8 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import { useAuth } from "../auth/AuthContext.jsx";
-import { PageHeader } from "./shared.jsx";
+import { useAuth } from "../auth/AuthContext";
+import { PageHeader } from "./shared";
 
 const BREAK_ALERT_WORKERS = [
   {

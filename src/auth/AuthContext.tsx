@@ -1,19 +1,52 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useMemo,
+  useState,
+  ReactNode,
+  Dispatch,
+  SetStateAction,
+} from "react";
 import {
   clearAuthUser,
   getAuthRole,
   getAuthUser,
   saveAuthUser,
+  User,
 } from "./authStorage";
 import { MOCK_AUTH_LOGIN_USERS } from "../access/uiRoleNavigation";
 
-const AuthContext = createContext(null);
+interface LoginCredentials {
+  email: string;
+  password: string;
+}
 
-export function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(() => getAuthUser());
-  const [currentRole, setCurrentRole] = useState(() => getAuthRole());
+interface AuthContextType {
+  currentUser: User | null;
+  currentRole: string | null;
+  isAuthenticated: boolean;
+  login: (credentials: LoginCredentials) => Promise<User>;
+  logout: () => void;
+}
 
-  const login = async ({ email, password }) => {
+const AuthContext = createContext<AuthContextType | null>(null);
+
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
+  const [currentUser, setCurrentUser] = useState<User | null>(() =>
+    getAuthUser(),
+  );
+  const [currentRole, setCurrentRole] = useState<string | null>(() =>
+    getAuthRole(),
+  );
+
+  const login = async ({
+    email,
+    password,
+  }: LoginCredentials): Promise<User> => {
     const emailKey = String(email || "")
       .trim()
       .toLowerCase();
@@ -28,7 +61,9 @@ export function AuthProvider({ children }) {
     });
 
     if (!matched) {
-      const error = new Error("Invalid email or password.");
+      const error = new Error("Invalid email or password.") as Error & {
+        response?: { status: number; data: string };
+      };
       error.response = {
         status: 401,
         data: "Invalid email or password.",
@@ -38,7 +73,7 @@ export function AuthProvider({ children }) {
 
     const user = matched.response;
 
-    const normalizedUser = {
+    const normalizedUser: User = {
       ...user,
       email,
       permissions: user.permissions ?? [],
@@ -51,13 +86,13 @@ export function AuthProvider({ children }) {
     return normalizedUser;
   };
 
-  const logout = () => {
+  const logout = (): void => {
     clearAuthUser();
     setCurrentUser(null);
     setCurrentRole(null);
   };
 
-  const value = useMemo(
+  const value = useMemo<AuthContextType>(
     () => ({
       currentUser,
       currentRole,
@@ -71,7 +106,7 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export function useAuth() {
+export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
 
   if (!context) {

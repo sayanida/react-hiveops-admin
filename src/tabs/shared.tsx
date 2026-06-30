@@ -55,7 +55,7 @@ export function DataTable({
 }) {
   if (!rows || rows.length === 0) {
     return (
-      <Paper variant="outlined" sx={{ p: 2 }}>
+      <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
         <Typography variant="body2" color="text.secondary">
           No data
         </Typography>
@@ -68,7 +68,15 @@ export function DataTable({
   const hasActions = typeof renderRowActions === "function";
 
   return (
-    <TableContainer component={Paper} variant="outlined">
+    <TableContainer
+      component={Paper}
+      variant="outlined"
+      sx={{
+        borderRadius: 1.5,
+        overflow: "hidden",
+        backgroundColor: "rgba(251, 253, 255, 0.92)",
+      }}
+    >
       <Table size="small">
         <TableHead>
           <TableRow>
@@ -90,7 +98,9 @@ export function DataTable({
             return (
               <TableRow key={rowKey} hover>
                 {headers.map((h) => (
-                  <TableCell key={h}>{row[h] ?? ""}</TableCell>
+                  <TableCell key={h} sx={{ color: "text.primary" }}>
+                    {row[h] ?? ""}
+                  </TableCell>
                 ))}
                 {hasActions ? (
                   <TableCell align="right">{renderRowActions(row)}</TableCell>
@@ -120,15 +130,17 @@ export function Field({ label, children }) {
             border: "1px solid",
             borderColor: "divider",
             backgroundColor: "background.paper",
+            borderRadius: 10,
+            transition: "border-color 120ms ease, box-shadow 120ms ease",
           },
           "& textarea": {
             minHeight: 88,
             resize: "vertical",
           },
           "& input:focus, & select:focus, & textarea:focus": {
-            outline: "2px solid",
-            outlineColor: "primary.light",
-            outlineOffset: 0,
+            outline: "none",
+            borderColor: "primary.main",
+            boxShadow: "0 0 0 4px rgba(15, 76, 129, 0.12)",
           },
         }}
       >
@@ -141,7 +153,7 @@ export function Field({ label, children }) {
 export function PageHeader({ title, description }) {
   return (
     <Box sx={{ mb: 2.5 }}>
-      <Typography variant="h5" sx={{ mb: 0.75 }}>
+      <Typography variant="h5" sx={{ mb: 0.75, color: "text.primary" }}>
         {title}
       </Typography>
       <Typography variant="body2" color="text.secondary">
@@ -172,12 +184,16 @@ export function PanelCard({ title, children, component = "div", onSubmit }) {
       component={component}
       onSubmit={onSubmit}
       sx={{
-        boxShadow: "0 10px 24px rgba(28, 26, 23, 0.08)",
+        borderRadius: 2,
+        boxShadow: "0 20px 44px rgba(10, 38, 67, 0.08)",
+        background:
+          "linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(248, 251, 254, 0.96) 100%)",
+        overflow: "hidden",
       }}
     >
-      <CardContent>
+      <CardContent sx={{ p: { xs: 2.25, md: 2.75 } }}>
         {title ? (
-          <Typography variant="h6" sx={{ mb: 1.25 }}>
+          <Typography variant="h6" sx={{ mb: 1.5 }}>
             {title}
           </Typography>
         ) : null}
@@ -201,6 +217,7 @@ export function InlineFields({ children }) {
           border: "1px solid",
           borderColor: "divider",
           backgroundColor: "background.paper",
+          borderRadius: 10,
         },
       }}
     >
@@ -217,9 +234,22 @@ export function FormActions({ children }) {
   );
 }
 
-export function PrimaryButton({ children, ...props }) {
+export function PrimaryButton({ children, sx, ...props }) {
   return (
-    <Button variant="contained" color="secondary" {...props}>
+    <Button
+      variant="contained"
+      color="primary"
+      sx={[
+        {
+          "&.Mui-disabled": {
+            backgroundColor: "rgba(134, 138, 143, 0.5)",
+            color: "rgba(238, 240, 243, 0.82)",
+          },
+        },
+        ...(Array.isArray(sx) ? sx : [sx]),
+      ]}
+      {...props}
+    >
       {children}
     </Button>
   );

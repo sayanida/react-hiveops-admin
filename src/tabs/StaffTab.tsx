@@ -29,7 +29,7 @@ import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import {
   mockRegistrations,
   mockStaffRows,
-} from "../mocks/staffAdminMockData.js";
+} from "../mocks/staffAdminMockData";
 import {
   normalizeList,
   DataTable,
@@ -39,7 +39,7 @@ import {
   PageHeader,
   PanelCard,
   PrimaryButton,
-} from "./shared.jsx";
+} from "./shared";
 
 const initialForm = {
   id: "",

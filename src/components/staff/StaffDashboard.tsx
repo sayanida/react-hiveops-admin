@@ -20,7 +20,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { PanelCard, PrimaryButton, GhostButton } from "../../tabs/shared.jsx";
+import { PanelCard, PrimaryButton, GhostButton } from "../../tabs/shared";
 import frodoProfile from "../../assets/frodo-baggins.jpg";
 
 // ─── Mock kiosk / worker data ────────────────────────────────────────────────
@@ -64,7 +64,11 @@ const BREAK_REASONS = [
   { value: "meal", label: "Meal", description: "Scheduled meal break" },
   { value: "rest", label: "Rest", description: "Short rest break" },
   { value: "personal", label: "Personal", description: "Personal reason" },
-  { value: "emergency", label: "Emergency", description: "Emergency situation" },
+  {
+    value: "emergency",
+    label: "Emergency",
+    description: "Emergency situation",
+  },
   { value: "other", label: "Other", description: "Specify below" },
 ];
 
@@ -76,7 +80,9 @@ const MOCK_BREAK = {
 };
 
 function getBreakReasonLabel(value) {
-  return BREAK_REASONS.find((reason) => reason.value === value)?.label || "Meal";
+  return (
+    BREAK_REASONS.find((reason) => reason.value === value)?.label || "Meal"
+  );
 }
 
 function KioskActionButton({ children, sx = {}, ...props }) {
@@ -166,8 +172,12 @@ function IdleState({ selectedMethod, setSelectedMethod, onIdentify }) {
                 key={method.value}
                 label={method.label}
                 clickable
-                color={selectedMethod === method.value ? "secondary" : "default"}
-                variant={selectedMethod === method.value ? "filled" : "outlined"}
+                color={
+                  selectedMethod === method.value ? "secondary" : "default"
+                }
+                variant={
+                  selectedMethod === method.value ? "filled" : "outlined"
+                }
                 onClick={() => setSelectedMethod(method.value)}
                 sx={{ fontWeight: 500 }}
               />
@@ -369,8 +379,14 @@ function ClockOutPanel() {
           value={MOCK_ATTENDANCE.clockOutStation}
         />
         <RosterInfoCard label="Clock In" value={MOCK_ATTENDANCE.clockInTime} />
-        <RosterInfoCard label="Clock Out" value={MOCK_ATTENDANCE.clockOutTime} />
-        <RosterInfoCard label="Total Hours" value={MOCK_ATTENDANCE.totalHours} />
+        <RosterInfoCard
+          label="Clock Out"
+          value={MOCK_ATTENDANCE.clockOutTime}
+        />
+        <RosterInfoCard
+          label="Total Hours"
+          value={MOCK_ATTENDANCE.totalHours}
+        />
       </Box>
 
       <Box
@@ -617,7 +633,20 @@ function EndBreakPanel({ selectedReason, onConfirm, onCancel }) {
 
 function SupervisorAssistancePanel({ onConfirm, onCancel }) {
   const [supervisorPin, setSupervisorPin] = useState("");
-  const keypadItems = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "←", "0", "✓"];
+  const keypadItems = [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "←",
+    "0",
+    "✓",
+  ];
 
   const handlePinPress = (item) => {
     if (item === "←") {
@@ -725,10 +754,10 @@ function SupervisorAssistancePanel({ onConfirm, onCancel }) {
                     fontWeight: 700,
                     fontSize: 18,
                     backgroundColor: isBack
-                    ? "#f57c00"
-                    : isConfirm
-                    ? "#2f8a3d"
-                    : "#f2f2f2",
+                      ? "#f57c00"
+                      : isConfirm
+                        ? "#2f8a3d"
+                        : "#f2f2f2",
                     color: isBack || isConfirm ? "#ffffff" : "#222222",
                     "&:hover": {
                       opacity: 0.9,
@@ -792,7 +821,7 @@ function SupervisorAssistancePanel({ onConfirm, onCancel }) {
                 textTransform: "none",
                 fontWeight: 700,
                 "&:hover": { backgroundColor: "#852d37" },
-                color: "#ffffff"
+                color: "#ffffff",
               }}
             >
               Confirm
@@ -987,7 +1016,8 @@ function IdentifiedState({
                 Select an action
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Kiosk content will appear here after the worker chooses an option.
+                Kiosk content will appear here after the worker chooses an
+                option.
               </Typography>
             </Box>
           </Box>
@@ -1124,7 +1154,8 @@ function FaceIdPocDialog({
               />
 
               <Alert severity="success" sx={{ mt: 2 }}>
-                PoC mock face match successful. Identified as {MOCK_WORKER.name}.
+                PoC mock face match successful. Identified as {MOCK_WORKER.name}
+                .
               </Alert>
             </PanelCard>
           </Box>
@@ -1157,7 +1188,7 @@ export default function StaffDashboard({
   const [breakNote, setBreakNote] = useState("");
   const [activePanel, setActivePanel] = useState("");
 
-    // ─── Task 123 webcam PoC state ─────────────────────────────────────────────
+  // ─── Task 123 webcam PoC state ─────────────────────────────────────────────
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState("");
   const [capturedPhoto, setCapturedPhoto] = useState("");
@@ -1189,7 +1220,7 @@ export default function StaffDashboard({
     setActivePanel(panel);
   };
 
-    // ─── Webcam helpers ────────────────────────────────────────────────────────
+  // ─── Webcam helpers ────────────────────────────────────────────────────────
   function stopCamera() {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());

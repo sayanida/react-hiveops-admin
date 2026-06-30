@@ -1,19 +1,28 @@
 /*
-StaffTopbar.jsx
+StaffTopbar.tsx
 	Top bar for staff pages
 	•	Displays brand badge, title, and subtitle
 	•	Displays worker identity on the right
 	•	Moves ApiConfigBar to the bottom-right for testing
 */
 
+import { useState } from "react";
 import { AppBar, Box, Toolbar, Typography } from "@mui/material";
+import ApiConfigBar from "../common/ApiConfigBar";
+
+interface StaffTopbarProps {
+  showToast: (msg: string, isError?: boolean) => void;
+  showUserIdentity?: boolean;
+}
 
 export default function StaffTopbar({
-  apiBase,
-  setApiBase,
   showToast,
   showUserIdentity = true,
-}) {
+}: StaffTopbarProps): JSX.Element {
+  const [apiBase, setApiBase] = useState(
+    () => localStorage.getItem("farm_staff_api_base") || "",
+  );
+
   return (
     <>
       <AppBar

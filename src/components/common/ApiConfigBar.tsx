@@ -1,5 +1,5 @@
 /*
-ApiConfigBar.jsx
+ApiConfigBar.tsx
   A small UI component for entering and saving the API base URL.
 	•	Input URL via a TextField
 	•	Save to localStorage with a button or Enter key
@@ -8,13 +8,21 @@ ApiConfigBar.jsx
 
 import { Button, Stack, TextField } from "@mui/material";
 
+interface ApiConfigBarProps {
+  storageKey: string;
+  apiBase: string;
+  setApiBase: (value: string) => void;
+  showToast: (msg: string, isError?: boolean) => void;
+  inputId?: string;
+}
+
 export default function ApiConfigBar({
   storageKey,
   apiBase,
   setApiBase,
   showToast,
   inputId = "apiBase",
-}) {
+}: ApiConfigBarProps): JSX.Element {
   const saveApi = () => {
     const v = apiBase.trim();
     if (!v) {

@@ -9,7 +9,6 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
-  IconButton,
   InputAdornment,
   Pagination,
   Paper,
@@ -18,20 +17,17 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
 import SearchIcon from "@mui/icons-material/Search";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
-import {
-  mockRegistrations,
-  mockStaffRows,
-} from "../mocks/staffAdminMockData.js";
+import { mockRegistrations, mockStaffRows } from "../mocks/staffAdminMockData";
 import {
   normalizeList,
   DataTable,
   GhostButton,
   PageHeader,
   PanelCard,
-} from "./shared.jsx";
+  PrimaryButton,
+} from "./shared";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const METHODS = [
@@ -283,25 +279,7 @@ export default function RegistrationsTab({ showToast }) {
     ? (METHODS.find((m) => m.label === currentReg.method)?.key ?? null)
     : null;
 
-  // ─── Shared dialog header style ─────────────────────────────────────────────
-  const headerSx = {
-    bgcolor: HEADER_BG,
-    color: "common.white",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    py: 1.5,
-    px: 2.5,
-  };
-
   const paperProps = { sx: { borderRadius: 2, overflow: "hidden" } };
-
-  const confirmBtnSx = {
-    textTransform: "none",
-    fontWeight: 700,
-    bgcolor: HEADER_BG,
-    "&:hover": { bgcolor: "#7d2834" },
-  };
 
   // ─── Method radio card ──────────────────────────────────────────────────────
   function MethodCard({ m, isSelected, isDisabled }) {
@@ -428,14 +406,7 @@ export default function RegistrationsTab({ showToast }) {
         maxWidth="sm"
         PaperProps={paperProps}
       >
-        <DialogTitle sx={headerSx}>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            Register Identification Method
-          </Typography>
-          <IconButton onClick={closeModal} sx={{ color: "common.white" }}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
+        <DialogTitle>Register Identification Method</DialogTitle>
 
         <DialogContent dividers sx={{ pt: 2.5 }}>
           {modalStaff && <StaffInfo staff={modalStaff} />}
@@ -455,17 +426,11 @@ export default function RegistrationsTab({ showToast }) {
           </Stack>
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, py: 2, justifyContent: "space-between" }}>
+        <DialogActions sx={{ px: 3, py: 2 }}>
           <GhostButton onClick={closeModal}>Cancel</GhostButton>
-          <Button
-            variant="contained"
-            disableElevation
-            disabled={!selectedMethod}
-            onClick={handleRegister}
-            sx={confirmBtnSx}
-          >
+          <PrimaryButton disabled={!selectedMethod} onClick={handleRegister}>
             Register Method
-          </Button>
+          </PrimaryButton>
         </DialogActions>
       </Dialog>
 
@@ -477,14 +442,7 @@ export default function RegistrationsTab({ showToast }) {
         maxWidth="sm"
         PaperProps={paperProps}
       >
-        <DialogTitle sx={headerSx}>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            Re-register Identification Method
-          </Typography>
-          <IconButton onClick={closeModal} sx={{ color: "common.white" }}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
+        <DialogTitle>Re-register Identification Method</DialogTitle>
 
         <DialogContent dividers sx={{ pt: 2.5 }}>
           {modalStaff && (
@@ -544,17 +502,11 @@ export default function RegistrationsTab({ showToast }) {
           )}
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, py: 2, justifyContent: "space-between" }}>
+        <DialogActions sx={{ px: 3, py: 2 }}>
           <GhostButton onClick={closeModal}>Cancel</GhostButton>
-          <Button
-            variant="contained"
-            disableElevation
-            disabled={!selectedMethod}
-            onClick={handleReregister}
-            sx={confirmBtnSx}
-          >
+          <PrimaryButton disabled={!selectedMethod} onClick={handleReregister}>
             Save New Method
-          </Button>
+          </PrimaryButton>
         </DialogActions>
       </Dialog>
 
@@ -566,14 +518,7 @@ export default function RegistrationsTab({ showToast }) {
         maxWidth="sm"
         PaperProps={paperProps}
       >
-        <DialogTitle sx={headerSx}>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            Issue Temporary PIN
-          </Typography>
-          <IconButton onClick={closeModal} sx={{ color: "common.white" }}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
+        <DialogTitle>Issue Temporary PIN</DialogTitle>
 
         <DialogContent dividers sx={{ pt: 2.5 }}>
           {modalStaff && <StaffInfo staff={modalStaff} />}
@@ -626,16 +571,11 @@ export default function RegistrationsTab({ showToast }) {
           </Stack>
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, py: 2, justifyContent: "space-between" }}>
+        <DialogActions sx={{ px: 3, py: 2 }}>
           <GhostButton onClick={closeModal}>Cancel</GhostButton>
-          <Button
-            variant="contained"
-            disableElevation
-            onClick={handleIssuePin}
-            sx={confirmBtnSx}
-          >
+          <PrimaryButton onClick={handleIssuePin}>
             Confirm &amp; Issue PIN
-          </Button>
+          </PrimaryButton>
         </DialogActions>
       </Dialog>
     </div>

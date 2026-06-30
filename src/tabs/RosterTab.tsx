@@ -1,13 +1,13 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Alert, Box, Typography } from "@mui/material";
-import { adminApi as api } from "../utils/api.js";
+import { adminApi as api } from "../utils/api";
 import {
   MOCK_ROSTER_ADMIN_ASSIGNED_SCOPE,
   ROLE_CODES,
   getUiCurrentUserProfile,
   getUiCurrentRole,
-} from "../access/uiRoleNavigation.js";
+} from "../access/uiRoleNavigation";
 import {
   normalizeList,
   Field,
@@ -18,7 +18,7 @@ import {
   PanelCard,
   PrimaryButton,
   TwoColumn,
-} from "./shared.jsx";
+} from "./shared";
 
 // selected date + next 6 days
 function getWeekRange(date) {

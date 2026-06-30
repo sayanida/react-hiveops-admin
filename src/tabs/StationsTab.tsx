@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Alert, FormHelperText } from "@mui/material";
-import { adminApi as api } from "../utils/api.js";
+import { adminApi as api } from "../utils/api";
 import {
   normalizeList,
   DataTable,
@@ -13,7 +13,7 @@ import {
   PrimaryButton,
   GhostButton,
   TwoColumn,
-} from "./shared.jsx";
+} from "./shared";
 
 const MOCK_STATION_ROWS = [
   {
