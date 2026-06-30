@@ -15,6 +15,39 @@ import {
   TwoColumn,
 } from "./shared.jsx";
 
+const MOCK_STATION_ROWS = [
+  {
+    id: 1,
+    name: "North Shed Entry",
+    location: "North Shed",
+    type: "CARD",
+  },
+  {
+    id: 2,
+    name: "South Gate Kiosk",
+    location: "South Gate",
+    type: "FACE",
+  },
+  {
+    id: 3,
+    name: "Packing Line A",
+    location: "Packing Facility",
+    type: "FINGERPRINT",
+  },
+  {
+    id: 4,
+    name: "Cold Storage Entry",
+    location: "Cold Storage",
+    type: "RETINAL_SCAN",
+  },
+  {
+    id: 5,
+    name: "Admin Office Terminal",
+    location: "Main Office",
+    type: "CARD",
+  },
+];
+
 export default function StationsTab({ showToast }) {
   const qc = useQueryClient();
   const [form, setForm] = useState({ name: "", location: "", type: "" });
@@ -58,26 +91,27 @@ export default function StationsTab({ showToast }) {
     setEditingStationId(null);
   };
 
-  const {
-    data: stationRows = [],
-    isFetching,
-  } = useQuery({
+  const { data: apiStationRows = [], isFetching } = useQuery({
     queryKey: ["stations"],
-    queryFn: () => api.get("/stations").then((r) => normalizeList(r.data)),  
+    queryFn: () => api.get("/stations").then((r) => normalizeList(r.data)),
   });
 
+  const stationRows = apiStationRows.length
+    ? apiStationRows
+    : MOCK_STATION_ROWS;
+
   const formatType = (type) => {
-  switch (type) {
-    case "CARD":
-      return "Card";
-    case "FACE":
-      return "Face";
-    case "FINGERPRINT":
-      return "Fingerprint";
-    case "RETINAL_SCAN":
-      return "Retinal Scan";
-    default:
-      return type;
+    switch (type) {
+      case "CARD":
+        return "Card";
+      case "FACE":
+        return "Face";
+      case "FINGERPRINT":
+        return "Fingerprint";
+      case "RETINAL_SCAN":
+        return "Retinal Scan";
+      default:
+        return type;
     }
   };
 
@@ -97,7 +131,7 @@ export default function StationsTab({ showToast }) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, payload }) => api.put(`/stations/${id}`, payload),  
+    mutationFn: ({ id, payload }) => api.put(`/stations/${id}`, payload),
     onSuccess: () => {
       showToast("Station updated.");
       setForm({ name: "", location: "", type: "" });
@@ -140,12 +174,7 @@ export default function StationsTab({ showToast }) {
             </Alert>
           ) : null}
           <Field label="Station Name">
-            <input
-              name="name"
-              type="text"
-              value={form.name}
-              onChange={set}
-            />
+            <input name="name" type="text" value={form.name} onChange={set} />
             {errors.name ? (
               <FormHelperText error>{errors.name}</FormHelperText>
             ) : null}
@@ -174,9 +203,9 @@ export default function StationsTab({ showToast }) {
             ) : null}
           </Field>
           <FormActions>
-            <PrimaryButton 
-            type="submit" 
-            disabled={saveMutation.isPending || updateMutation.isPending}
+            <PrimaryButton
+              type="submit"
+              disabled={saveMutation.isPending || updateMutation.isPending}
             >
               {saveMutation.isPending || updateMutation.isPending
                 ? editingStationId

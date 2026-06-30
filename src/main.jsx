@@ -2,7 +2,7 @@
 Main.jsx
 	The entry point of the app, mounts React to the DOM.
 	•	Apply MUI theme (ThemeProvider) and global CSS reset (CssBaseline)
-	•	Define routes (/, /admin, /staff) and set default redirect (/ → /staff)
+	•	Define routes (/, /admin) and set default redirect (/ → /admin)
 
 Notes: Usually this file is not modified
   - serves as the foundation of the app
@@ -10,15 +10,9 @@ Notes: Usually this file is not modified
 
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider, CssBaseline } from "@mui/material";
 import Admin from "./pages/Admin.jsx";
-import Staff from "./pages/Staff.jsx";
 import Login from "./pages/Login.jsx";
 import Unauthorized from "./pages/Unauthorized.jsx";
 import theme from "./theme.js";
@@ -79,15 +73,6 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={ADMIN_ROLES}>
             <Admin />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/staff"
-        element={
-          <ProtectedRoute allowedRoles={[ROLES.WORKER]}>
-            <Staff />
           </ProtectedRoute>
         }
       />

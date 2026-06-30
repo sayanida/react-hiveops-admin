@@ -18,7 +18,6 @@ export function normalizeRole(role) {
 export function getDefaultPathForRole(role) {
   const normalizedRole = normalizeRole(role);
 
-  if (normalizedRole === ROLES.WORKER) return "/staff";
   if (ADMIN_ROLES.includes(normalizedRole)) return "/admin";
 
   return "/login";

@@ -135,7 +135,7 @@ function AdminApp() {
         }}
       />
 
-      <AdminTopbar />
+      <AdminTopbar showToast={showToast} />
 
       <Box
         sx={{

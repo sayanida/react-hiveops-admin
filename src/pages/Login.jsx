@@ -131,7 +131,7 @@ export default function Login() {
 
             <Box>
               <Typography variant="h6">
-                Beerenberg Time Management System
+                Beerenberg Workforce Ops Console
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Admin Dashboard

@@ -5,9 +5,11 @@
   •	Displays current signed-in user identity
 */
 
+import { useState } from "react";
 import { AppBar, Box, Button, Toolbar, Typography } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
 import { useAuth } from "../../auth/AuthContext";
+import ApiConfigBar from "../common/ApiConfigBar.jsx";
 
 function formatRoleLabel(role) {
   switch (role) {
@@ -24,8 +26,11 @@ function formatRoleLabel(role) {
   }
 }
 
-export default function AdminTopbar() {
+export default function AdminTopbar({ showToast }) {
   const { currentUser, currentRole } = useAuth();
+  const [apiBase, setApiBase] = useState(
+    () => localStorage.getItem("timeclock_api_base") || "",
+  );
 
   const userName = currentUser?.name || "Admin User";
   const userRole = formatRoleLabel(currentRole || currentUser?.role);
@@ -68,13 +73,13 @@ export default function AdminTopbar() {
               }}
             >
               <Typography fontSize="14px" fontWeight={600}>
-                BTMS
+                BWO
               </Typography>
             </Box>
 
             <Box>
               <Typography variant="h6">
-                Beerenberg Time Management System
+                Beerenberg Workforce Ops Console
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Admin Dashboard
@@ -116,6 +121,28 @@ export default function AdminTopbar() {
           </Button>
         </Toolbar>
       </AppBar>
+
+      <Box
+        sx={{
+          position: "fixed",
+          right: 24,
+          bottom: 16,
+          zIndex: 30,
+          backgroundColor: "rgba(255,255,255,0.9)",
+          border: "1px solid",
+          borderColor: "divider",
+          borderRadius: 1,
+          p: 1,
+        }}
+      >
+        <ApiConfigBar
+          storageKey="timeclock_api_base"
+          apiBase={apiBase}
+          setApiBase={setApiBase}
+          showToast={showToast}
+          inputId="adminApiBase"
+        />
+      </Box>
     </>
   );
 }

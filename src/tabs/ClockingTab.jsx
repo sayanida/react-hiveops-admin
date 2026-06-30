@@ -4,6 +4,10 @@ import {
   Box,
   Button,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControlLabel,
   MenuItem,
   Paper,
@@ -101,6 +105,16 @@ function nowTimeStr() {
   return new Date().toTimeString().slice(0, 5);
 }
 
+function nowAuditStamp() {
+  return new Date().toLocaleString("en-AU", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 const FORM_INIT = {
   staffId: "",
   action: "Clock In",
@@ -116,6 +130,18 @@ export default function ClockingTab({ showToast }) {
   const [form, setForm] = useState(FORM_INIT);
   const [amendments, setAmendments] = useState(INITIAL_AMENDMENTS);
   const [successBanner, setSuccessBanner] = useState(null);
+  const [auditTrail, setAuditTrail] = useState([]);
+  const [editDialog, setEditDialog] = useState({
+    open: false,
+    entry: null,
+    reason: "",
+    newAction: "Clock In",
+  });
+  const [deleteDialog, setDeleteDialog] = useState({
+    open: false,
+    entry: null,
+    reason: "",
+  });
 
   const staffRows = useMemo(() => normalizeList(mockStaffRows), []);
   const currentUserId = String(currentUser?.staffId ?? "");
@@ -147,6 +173,18 @@ export default function ClockingTab({ showToast }) {
     };
 
     setAmendments((prev) => [newEntry, ...prev]);
+    setAuditTrail((prev) => [
+      {
+        id: `audit-${Date.now()}`,
+        actionType: "CREATE_AMENDMENT",
+        target: `${newEntry.empCode} ${newEntry.staffName}`,
+        actor: submitterName,
+        reason: form.reason,
+        details: `${newEntry.action} at ${newEntry.dateTime}`,
+        timestamp: nowAuditStamp(),
+      },
+      ...prev,
+    ]);
     setSuccessBanner({
       action: form.action,
       staffName: staff.name,
@@ -163,17 +201,134 @@ export default function ClockingTab({ showToast }) {
   }
 
   function handleApprove(id) {
+    const approved = amendments.find((item) => item.id === id);
     setAmendments((prev) =>
       prev.map((a) => (a.id === id ? { ...a, status: "APPROVED" } : a)),
     );
+    if (approved) {
+      setAuditTrail((prev) => [
+        {
+          id: `audit-${Date.now()}`,
+          actionType: "APPROVE_AMENDMENT",
+          target: `${approved.empCode} ${approved.staffName}`,
+          actor: `${currentUser?.name ?? "Admin"} (${currentUser?.staffId ?? "A-001"})`,
+          reason: "Approved pending amendment",
+          details: `${approved.action} at ${approved.dateTime}`,
+          timestamp: nowAuditStamp(),
+        },
+        ...prev,
+      ]);
+    }
     showToast?.("Amendment approved.");
   }
 
   function handleReject(id) {
+    const rejected = amendments.find((item) => item.id === id);
     setAmendments((prev) =>
       prev.map((a) => (a.id === id ? { ...a, status: "REJECTED" } : a)),
     );
+    if (rejected) {
+      setAuditTrail((prev) => [
+        {
+          id: `audit-${Date.now()}`,
+          actionType: "REJECT_AMENDMENT",
+          target: `${rejected.empCode} ${rejected.staffName}`,
+          actor: `${currentUser?.name ?? "Admin"} (${currentUser?.staffId ?? "A-001"})`,
+          reason: "Rejected pending amendment",
+          details: `${rejected.action} at ${rejected.dateTime}`,
+          timestamp: nowAuditStamp(),
+        },
+        ...prev,
+      ]);
+    }
     showToast?.("Amendment rejected.");
+  }
+
+  function openEditDialog(entry) {
+    setEditDialog({
+      open: true,
+      entry,
+      reason: "",
+      newAction: entry.action,
+    });
+  }
+
+  function closeEditDialog() {
+    setEditDialog({
+      open: false,
+      entry: null,
+      reason: "",
+      newAction: "Clock In",
+    });
+  }
+
+  function saveEdit() {
+    const reason = editDialog.reason.trim();
+    if (!reason) {
+      showToast?.("Edit reason is required.", true);
+      return;
+    }
+
+    const entry = editDialog.entry;
+    if (!entry) return;
+
+    setAmendments((prev) =>
+      prev.map((item) =>
+        item.id === entry.id ? { ...item, action: editDialog.newAction } : item,
+      ),
+    );
+
+    setAuditTrail((prev) => [
+      {
+        id: `audit-${Date.now()}`,
+        actionType: "EDIT_AMENDMENT",
+        target: `${entry.empCode} ${entry.staffName}`,
+        actor: `${currentUser?.name ?? "Admin"} (${currentUser?.staffId ?? "A-001"})`,
+        reason,
+        details: `Action changed: ${entry.action} -> ${editDialog.newAction}`,
+        timestamp: nowAuditStamp(),
+      },
+      ...prev,
+    ]);
+
+    closeEditDialog();
+    showToast?.("Amendment updated.");
+  }
+
+  function openDeleteDialog(entry) {
+    setDeleteDialog({ open: true, entry, reason: "" });
+  }
+
+  function closeDeleteDialog() {
+    setDeleteDialog({ open: false, entry: null, reason: "" });
+  }
+
+  function confirmDelete() {
+    const reason = deleteDialog.reason.trim();
+    if (!reason) {
+      showToast?.("Delete reason is required.", true);
+      return;
+    }
+
+    const entry = deleteDialog.entry;
+    if (!entry) return;
+
+    setAmendments((prev) => prev.filter((item) => item.id !== entry.id));
+    setAuditTrail((prev) => [
+      {
+        id: `audit-${Date.now()}`,
+        actionType: "DELETE_AMENDMENT",
+        target: `${entry.empCode} ${entry.staffName}`,
+        actor: `${currentUser?.name ?? "Admin"} (${currentUser?.staffId ?? "A-001"})`,
+        reason,
+        details: `${entry.action} at ${entry.dateTime}`,
+        timestamp: nowAuditStamp(),
+      },
+      ...prev,
+    ]);
+
+    closeDeleteDialog();
+    showToast?.("Amendment deleted.");
   }
 
   return (
@@ -417,13 +572,33 @@ export default function ClockingTab({ showToast }) {
                       </TableCell>
                       <TableCell>
                         {isPending && isSelf ? (
-                          <Typography
-                            variant="caption"
-                            color="text.disabled"
-                            sx={{ fontStyle: "italic" }}
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            alignItems="center"
                           >
-                            Cannot approve
-                          </Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.disabled"
+                              sx={{ fontStyle: "italic" }}
+                            >
+                              Cannot approve
+                            </Typography>
+                            <GhostButton
+                              type="button"
+                              size="small"
+                              onClick={() => openEditDialog(entry)}
+                            >
+                              Edit
+                            </GhostButton>
+                            <GhostButton
+                              type="button"
+                              size="small"
+                              onClick={() => openDeleteDialog(entry)}
+                            >
+                              Delete
+                            </GhostButton>
+                          </Stack>
                         ) : isPending ? (
                           <Stack direction="row" spacing={1}>
                             <Button
@@ -446,6 +621,20 @@ export default function ClockingTab({ showToast }) {
                             >
                               × Reject
                             </Button>
+                            <GhostButton
+                              type="button"
+                              size="small"
+                              onClick={() => openEditDialog(entry)}
+                            >
+                              Edit
+                            </GhostButton>
+                            <GhostButton
+                              type="button"
+                              size="small"
+                              onClick={() => openDeleteDialog(entry)}
+                            >
+                              Delete
+                            </GhostButton>
                           </Stack>
                         ) : null}
                       </TableCell>
@@ -457,6 +646,139 @@ export default function ClockingTab({ showToast }) {
           </Table>
         </TableContainer>
       </Box>
+
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
+          Amendment Audit Trail
+        </Typography>
+        <TableContainer component={Paper} variant="outlined">
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                {["Time", "Action", "Target", "Actor", "Reason", "Details"].map(
+                  (h) => (
+                    <TableCell key={h} sx={{ fontWeight: 700 }}>
+                      {h}
+                    </TableCell>
+                  ),
+                )}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {auditTrail.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    align="center"
+                    sx={{ color: "text.secondary", py: 3 }}
+                  >
+                    No audit entries yet.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                auditTrail.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell sx={{ whiteSpace: "nowrap" }}>
+                      {row.timestamp}
+                    </TableCell>
+                    <TableCell>{row.actionType}</TableCell>
+                    <TableCell>{row.target}</TableCell>
+                    <TableCell>{row.actor}</TableCell>
+                    <TableCell>{row.reason}</TableCell>
+                    <TableCell>{row.details}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
+
+      <Dialog
+        open={editDialog.open}
+        onClose={closeEditDialog}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>Edit Amendment</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2} sx={{ mt: 0.5 }}>
+            <TextField
+              select
+              label="New Action"
+              value={editDialog.newAction}
+              onChange={(e) =>
+                setEditDialog((prev) => ({
+                  ...prev,
+                  newAction: e.target.value,
+                }))
+              }
+              size="small"
+            >
+              <MenuItem value="Clock In">Clock In</MenuItem>
+              <MenuItem value="Clock Out">Clock Out</MenuItem>
+            </TextField>
+            <TextField
+              label="Reason for Edit"
+              multiline
+              minRows={3}
+              value={editDialog.reason}
+              onChange={(e) =>
+                setEditDialog((prev) => ({ ...prev, reason: e.target.value }))
+              }
+              required
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeEditDialog} color="inherit">
+            Cancel
+          </Button>
+          <Button onClick={saveEdit} variant="contained" disableElevation>
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={deleteDialog.open}
+        onClose={closeDeleteDialog}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>Delete Amendment</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2} sx={{ mt: 0.5 }}>
+            <Alert severity="warning">
+              This amendment will be removed. Enter a reason to keep audit
+              trace.
+            </Alert>
+            <TextField
+              label="Reason for Delete"
+              multiline
+              minRows={3}
+              value={deleteDialog.reason}
+              onChange={(e) =>
+                setDeleteDialog((prev) => ({ ...prev, reason: e.target.value }))
+              }
+              required
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeDeleteDialog} color="inherit">
+            Cancel
+          </Button>
+          <Button
+            onClick={confirmDelete}
+            variant="contained"
+            color="error"
+            disableElevation
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }

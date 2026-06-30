@@ -16,5 +16,43 @@
       "weeklyHours": null,
       "schedulePattern": "Mon-Fri 9am-5pm"
     }
+  ],
+  "stations": [
+    {
+      "id": 1,
+      "name": "North Shed Entry",
+      "location": "North Shed",
+      "type": "CARD"
+    },
+    {
+      "id": 2,
+      "name": "South Gate Kiosk",
+      "location": "South Gate",
+      "type": "FACE"
+    },
+    {
+      "id": 3,
+      "name": "Packing Line A",
+      "location": "Packing Facility",
+      "type": "FINGERPRINT"
+    },
+    {
+      "id": 4,
+      "name": "Cold Storage Entry",
+      "location": "Cold Storage",
+      "type": "RETINAL_SCAN"
+    },
+    {
+      "id": 5,
+      "name": "Admin Office Terminal",
+      "location": "Main Office",
+      "type": "CARD"
+    },
+    {
+      "id": 6,
+      "name": "East Field Portable",
+      "location": "East Field",
+      "type": "FACE"
+    }
   ]
 }

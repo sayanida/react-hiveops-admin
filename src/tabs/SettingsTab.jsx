@@ -52,6 +52,7 @@ const BREAK_REASONS = [
 ];
 
 const BREAK_INIT = Object.fromEntries(BREAK_REASONS.map((r) => [r.id, null]));
+const POLICY_STORAGE_KEY = "clock_policy_settings";
 
 const HEADER_BG = "#9b3440";
 
@@ -62,12 +63,40 @@ const initialForm = {
   sundayPenalty: false,
   publicHolidayPenalty: false,
 };
+
+function loadPolicySettings() {
+  try {
+    const raw = localStorage.getItem(POLICY_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+
+    return {
+      stationPolicy:
+        parsed?.stationPolicy === "enforce" ? "enforce" : "warn_only",
+      unrosteredPolicy:
+        parsed?.unrosteredPolicy === "block" ? "block" : "allow_flag",
+      updatedAt: parsed?.updatedAt || "",
+    };
+  } catch {
+    return null;
+  }
+}
+
+function savePolicySettings(nextSettings) {
+  try {
+    localStorage.setItem(POLICY_STORAGE_KEY, JSON.stringify(nextSettings));
+  } catch {
+    // localStorage may be unavailable in private mode.
+  }
+}
+
 export default function SettingsTab({ showToast }) {
   const [form, setForm] = useState(initialForm);
   const [breakReasons, setBreakReasons] = useState(BREAK_INIT);
   const [breakErrors, setBreakErrors] = useState({});
   const [stationPolicy, setStationPolicy] = useState("warn_only");
   const [unrosteredPolicy, setUnrosteredPolicy] = useState("allow_flag");
+  const [policyUpdatedAt, setPolicyUpdatedAt] = useState("");
   const lastErrorAtRef = useRef(0);
   const set = (e) =>
     setForm((f) => ({
@@ -97,6 +126,14 @@ export default function SettingsTab({ showToast }) {
     refetchOnWindowFocus: false,
     retry: false,
   });
+  useEffect(() => {
+    const stored = loadPolicySettings();
+    if (!stored) return;
+    setStationPolicy(stored.stationPolicy);
+    setUnrosteredPolicy(stored.unrosteredPolicy);
+    setPolicyUpdatedAt(stored.updatedAt || "");
+  }, []);
+
   useEffect(() => {
     if (!overtimeRules) return;
     const d = overtimeRules;
@@ -203,12 +240,32 @@ export default function SettingsTab({ showToast }) {
     setBreakErrors({});
   };
 
+  const persistPolicies = ({ nextStationPolicy, nextUnrosteredPolicy }) => {
+    const updatedAt = new Date().toISOString();
+    savePolicySettings({
+      stationPolicy: nextStationPolicy,
+      unrosteredPolicy: nextUnrosteredPolicy,
+      updatedAt,
+    });
+    setPolicyUpdatedAt(updatedAt);
+  };
+
   const handleSaveStationPolicy = () => {
-    showToast("Station policy saved.");
+    persistPolicies({
+      nextStationPolicy: stationPolicy,
+      nextUnrosteredPolicy: unrosteredPolicy,
+    });
+    showToast("Station policy saved. Changes apply to future clock events.");
   };
 
   const handleSaveUnrosteredPolicy = () => {
-    showToast("Unrostered clock-in policy saved.");
+    persistPolicies({
+      nextStationPolicy: stationPolicy,
+      nextUnrosteredPolicy: unrosteredPolicy,
+    });
+    showToast(
+      "Unrostered clock-in policy saved. Changes apply to future clock events.",
+    );
   };
 
   const setBreakChoice = (id, value) => {
@@ -619,6 +676,15 @@ export default function SettingsTab({ showToast }) {
           >
             Changes apply immediately to all future clock events.
           </Typography>
+          {policyUpdatedAt ? (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mb: 1.25 }}
+            >
+              Last saved: {new Date(policyUpdatedAt).toLocaleString("en-AU")}
+            </Typography>
+          ) : null}
           <Box sx={{ display: "flex", gap: 1.5 }}>
             <Button
               variant="contained"
