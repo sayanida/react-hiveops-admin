@@ -6,7 +6,7 @@
 **Date:** [30 June 2026]  
 **Live Demo:**　https://sayanida.github.io/react-hiveops-admin/
 
-An admin operations console for workforce and attendance management, built with React and Material UI.
+An admin operations console for workforce and attendance management, built with React, TypeScript and Material UI.
 
 Originally started as a group project assignment. I independently redesigned and extended the Admin portal into a standalone application — implementing features from given requirements, designing the UI from scratch, and refactoring the architecture to be Admin-focused.
 
