@@ -118,12 +118,12 @@ export default function Login(): JSX.Element {
       />
 
       <AppBar
-        position="sticky"
+        position="fixed"
         color="transparent"
         elevation={0}
         sx={{
           backdropFilter: "blur(18px)",
-          backgroundColor: "rgba(244, 248, 252, 0.7)",
+          backgroundColor: "transparent",
           borderBottom: "1px solid",
           borderColor: "divider",
         }}
@@ -177,11 +177,12 @@ export default function Login(): JSX.Element {
         sx={{
           position: "relative",
           zIndex: 1,
-          minHeight: "calc(100vh - 82px)",
+          minHeight: "100vh",
+          pt: { xs: "106px", md: "112px" },
           display: "grid",
           alignItems: "center",
           px: { xs: 2, md: 4 },
-          py: { xs: 4, md: 6 },
+          pb: { xs: 4, md: 6 },
         }}
       >
         <Box
@@ -198,7 +199,7 @@ export default function Login(): JSX.Element {
             alignItems: "center",
           }}
         >
-          <Box sx={{ pr: { lg: 3 } }}>
+          <Box sx={{ pr: { lg: 3 }, mt: { xs: 1, md: 2 } }}>
             <Paper
               variant="outlined"
               sx={{
@@ -343,123 +344,173 @@ export default function Login(): JSX.Element {
             </Paper>
           </Box>
 
-          <Paper
-            variant="outlined"
-            sx={{
-              width: "100%",
-              borderRadius: 2,
-              overflow: "hidden",
-              borderColor: "rgba(15, 76, 129, 0.12)",
-              background:
-                "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248, 251, 254, 0.98) 100%)",
-              boxShadow: "0 30px 60px rgba(10, 38, 67, 0.12)",
-            }}
-          >
-            <Box
+          <Box>
+            <Paper
+              variant="outlined"
               sx={{
+                width: "100%",
+                borderRadius: 2,
+                overflow: "hidden",
+                borderColor: "rgba(15, 76, 129, 0.12)",
                 background:
-                  "linear-gradient(135deg, rgba(8, 48, 84, 0.98) 0%, rgba(18, 88, 143, 0.96) 52%, rgba(108, 171, 214, 0.92) 100%)",
-                color: "common.white",
-                px: 3,
-                py: 2.5,
+                  "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248, 251, 254, 0.98) 100%)",
+                boxShadow: "0 30px 60px rgba(10, 38, 67, 0.12)",
               }}
             >
-              <Typography sx={{ fontWeight: 700, fontSize: 18, mb: 0.5 }}>
-                Admin Login
-              </Typography>
-              <Typography
-                sx={{ color: "rgba(247, 251, 255, 0.8)", fontSize: 13 }}
+              <Box
+                sx={{
+                  background:
+                    "linear-gradient(135deg, rgba(8, 48, 84, 0.98) 0%, rgba(18, 88, 143, 0.96) 52%, rgba(108, 171, 214, 0.92) 100%)",
+                  color: "common.white",
+                  px: 3,
+                  py: 2.5,
+                }}
               >
-                Use your assigned credentials to continue.
-              </Typography>
-            </Box>
-
-            <Box sx={{ px: 3, py: 3.25 }}>
-              <Box component="form" onSubmit={handleSubmit}>
-                <Stack spacing={2}>
-                  {error ? <Alert severity="error">{error}</Alert> : null}
-
-                  <Box>
-                    <Typography
-                      sx={{
-                        fontSize: 12,
-                        color: "text.secondary",
-                        mb: 0.8,
-                        fontWeight: 600,
-                      }}
-                    >
-                      Email
-                    </Typography>
-                    <TextField
-                      name="email"
-                      type="email"
-                      value={form.email}
-                      onChange={handleChange}
-                      placeholder="admin@beerenberg.com.au"
-                      fullWidth
-                      size="small"
-                      variant="outlined"
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          backgroundColor: "rgba(255,255,255,0.86)",
-                          borderRadius: 1.5,
-                        },
-                      }}
-                    />
-                  </Box>
-
-                  <Box>
-                    <Typography
-                      sx={{
-                        fontSize: 12,
-                        color: "text.secondary",
-                        mb: 0.8,
-                        fontWeight: 600,
-                      }}
-                    >
-                      Password
-                    </Typography>
-                    <TextField
-                      name="password"
-                      type="password"
-                      value={form.password}
-                      onChange={handleChange}
-                      placeholder="••••••••"
-                      fullWidth
-                      size="small"
-                      variant="outlined"
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          backgroundColor: "rgba(255,255,255,0.86)",
-                          borderRadius: 1.5,
-                        },
-                      }}
-                    />
-                  </Box>
-
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    disabled={submitting}
-                    sx={{
-                      mt: 0.5,
-                      py: 1.3,
-                      fontWeight: 700,
-                      fontSize: 15,
-                    }}
-                  >
-                    {submitting ? "Logging in..." : "Log In"}
-                  </Button>
-
-                  <Typography
-                    sx={{ fontSize: 12, color: "text.secondary", pt: 1 }}
-                  >
-                    Forgot password? Contact your system administrator.
-                  </Typography>
-                </Stack>
+                <Typography sx={{ fontWeight: 700, fontSize: 18, mb: 0.5 }}>
+                  Admin Login
+                </Typography>
+                <Typography
+                  sx={{ color: "rgba(247, 251, 255, 0.8)", fontSize: 13 }}
+                >
+                  Use your assigned credentials to continue.
+                </Typography>
               </Box>
+
+              <Box sx={{ px: 3, py: 3.25 }}>
+                <Box component="form" onSubmit={handleSubmit}>
+                  <Stack spacing={2}>
+                    {error ? <Alert severity="error">{error}</Alert> : null}
+
+                    <Box>
+                      <Typography
+                        sx={{
+                          fontSize: 12,
+                          color: "text.secondary",
+                          mb: 0.8,
+                          fontWeight: 600,
+                        }}
+                      >
+                        Email
+                      </Typography>
+                      <TextField
+                        name="email"
+                        type="email"
+                        value={form.email}
+                        onChange={handleChange}
+                        placeholder="admin@beerenberg.com.au"
+                        fullWidth
+                        size="small"
+                        variant="outlined"
+                        sx={{
+                          "& .MuiOutlinedInput-root": {
+                            backgroundColor: "rgba(255,255,255,0.86)",
+                            borderRadius: 1.5,
+                          },
+                        }}
+                      />
+                    </Box>
+
+                    <Box>
+                      <Typography
+                        sx={{
+                          fontSize: 12,
+                          color: "text.secondary",
+                          mb: 0.8,
+                          fontWeight: 600,
+                        }}
+                      >
+                        Password
+                      </Typography>
+                      <TextField
+                        name="password"
+                        type="password"
+                        value={form.password}
+                        onChange={handleChange}
+                        placeholder="••••••••"
+                        fullWidth
+                        size="small"
+                        variant="outlined"
+                        sx={{
+                          "& .MuiOutlinedInput-root": {
+                            backgroundColor: "rgba(255,255,255,0.86)",
+                            borderRadius: 1.5,
+                          },
+                        }}
+                      />
+                    </Box>
+
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      disabled={submitting}
+                      sx={{
+                        mt: 0.5,
+                        py: 1.3,
+                        fontWeight: 700,
+                        fontSize: 15,
+                      }}
+                    >
+                      {submitting ? "Logging in..." : "Log In"}
+                    </Button>
+
+                    <Typography
+                      sx={{ fontSize: 12, color: "text.secondary", pt: 1 }}
+                    >
+                      Forgot password? Contact your system administrator.
+                    </Typography>
+                  </Stack>
+                </Box>
+              </Box>
+            </Paper>
+
+            <Box sx={{ mt: 1.5, px: 0.5 }}>
+              <Typography
+                variant="caption"
+                color="text.disabled"
+                sx={{ display: "block", mb: 0.75 }}
+              >
+                Demo Credentials
+              </Typography>
+              <Stack spacing={0.5}>
+                {(
+                  [
+                    {
+                      role: "Office Admin",
+                      email: "admin@beerenberg.com.au",
+                      note: "Full access",
+                    },
+                    {
+                      role: "Manager",
+                      email: "frodo@farm.com",
+                      note: "Stations, Clocking, Reports, Alerts, Exceptions",
+                    },
+                    {
+                      role: "Roster Admin",
+                      email: "samwise@farm.com",
+                      note: "Rostering only",
+                    },
+                  ] as { role: string; email: string; note: string }[]
+                ).map((cred) => (
+                  <Typography
+                    key={cred.role}
+                    variant="caption"
+                    color="text.disabled"
+                    sx={{ display: "block", fontSize: 11 }}
+                  >
+                    <Box component="span" sx={{ fontWeight: 600 }}>
+                      {cred.role}
+                    </Box>
+                    {" — "}
+                    {cred.email}
+                    {" / password123"}
+                    <Box component="span" sx={{ ml: 0.75, opacity: 0.7 }}>
+                      ({cred.note})
+                    </Box>
+                  </Typography>
+                ))}
+              </Stack>
             </Box>
-          </Paper>
+          </Box>
         </Box>
       </Box>
     </Box>

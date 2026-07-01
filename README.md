@@ -3,12 +3,13 @@
 **Project:** _HiveOps Admin Console_  
 **Version:** 2.0  
 **Author:** Saya Yoshida  
-**Date:** [30 June 2026]  
+**Date:** [1 July 2026]  
 **Live Demo:**　https://sayanida.github.io/react-hiveops-admin/
 
 An admin operations console for workforce and attendance management, built with React, TypeScript and Material UI.
 
-Originally started as a group project assignment. I independently redesigned and extended the Admin portal into a standalone application — implementing features from given requirements, designing the UI from scratch, and refactoring the architecture to be Admin-focused.
+Originally developed as part of a university group project.
+This repository contains my independently redesigned and extended Admin Portal. I rebuilt the UI, migrated the project to TypeScript, implemented　features from the original requirements, and refactored the architecture into a standalone portfolio project.
 
 ---
 
@@ -30,13 +31,11 @@ This app provides a role-based admin dashboard for managing staff, rostering, cl
 
 | Category          | Technology                                               |
 | ----------------- | -------------------------------------------------------- |
-| UI Framework      | [React 19](https://react.dev)                            |
-| Component Library | [MUI (Material UI) v7](https://mui.com)                  |
+| UI Framework      | [React](https://react.dev)                            |
+| Component Library | [MUI (Material UI)](https://mui.com)                  |
 | Build Tool        | [Vite](https://vitejs.dev)                               |
 | Language          | TypeScript (TS/TSX)                                      |
-| Data Fetching     | [TanStack Query v5](https://tanstack.com/query)          |
 | HTTP Client       | [Axios](https://axios-http.com)                          |
-| Routing           | [React Router v7](https://reactrouter.com)               |
 | Mock API          | [JSON Server](https://www.npmjs.com/package/json-server) |
 
 ### TypeScript migration status
@@ -70,6 +69,104 @@ Login role determines which tabs are visible:
 | Office Admin         | All tabs                                              |
 | Manager / Supervisor | Stations, Clocking, Reports, Break Alerts, Exceptions |
 | Roster Admin         | Rostering only                                        |
+
+---
+
+## Getting Started
+Try the live demo:
+https://sayanida.github.io/react-hiveops-admin/
+
+or following below steps:
+
+### Prerequisites
+
+- [Node.js v20+](https://nodejs.org) — check with `node -v`
+- [nvm](https://github.com/nvm-sh/nvm) (recommended)
+
+### Install and run
+
+```bash
+nvm use 20
+npm install
+npm run dev
+```
+
+App runs at **http://localhost:5173** — navigate to `/admin` to start.
+
+---
+
+## Mock Login Credentials
+
+| Email                     | Password      | Role         |
+| ------------------------- | ------------- | ------------ |
+| `admin@beerenberg.com.au` | `password123` | Office Admin |
+| `frodo@farm.com`          | `password123` | Manager      |
+| `samwise@farm.com`        | `password123` | Roster Admin |
+
+---
+
+## Mock API (JSON Server)
+
+```bash
+npx json-server --watch db.json --routes routes.json --port 3001
+```
+
+After starting the mock API:
+
+1. Open the Admin screen.
+2. In the API Base URL input at the bottom-right, enter `http://localhost:3001`.
+3. Click Save.
+
+![Input the link](./src/assets/mockAPI.png)
+
+Files:
+
+- `db.json` — mock data source
+- `routes.json` — URL rewrite rules
+
+---
+
+## Project Structure
+
+```
+src/
+├── main.tsx                   # App entry point + routing
+├── theme.ts                   # MUI theme configuration
+├── access/
+│   └── uiRoleNavigation.ts    # Role-to-tab access control
+├── auth/
+│   ├── AuthContext.tsx        # Auth state provider
+│   ├── authStorage.ts         # Session persistence
+│   └── roleAccess.ts          # Role constants and helpers
+├── components/
+│   ├── admin/
+│   │   ├── AdminSidebar.tsx
+│   │   └── AdminTopbar.tsx
+│   └── common/
+│       ├── ApiConfigBar.tsx
+│       └── Toast.tsx
+├── hooks/
+│   └── useToast.ts
+├── mocks/
+│   └── staffAdminMockData.ts
+├── pages/
+│   ├── Admin.tsx              # Admin dashboard entry
+│   ├── Login.tsx
+│   └── Unauthorized.tsx
+├── tabs/
+│   ├── shared.tsx             # Shared UI components
+│   ├── StaffTab.tsx
+│   ├── RosterTab.tsx
+│   ├── StationsTab.tsx
+│   ├── ClockingTab.tsx
+│   ├── RegistrationsTab.tsx
+│   ├── ReportsTab.tsx
+│   ├── BreakAlertsTab.tsx
+│   ├── ExceptionsTab.tsx
+│   └── SettingsTab.tsx
+└── utils/
+    └── api.ts
+```
 
 ---
 
@@ -254,105 +351,3 @@ The following user stories were specified in the project's Business Analyst work
 - Given the policy is set to enforce, then the system blocks a worker from clocking out at the same station they clocked in at
 - Given the unrostered clock-in policy is switched to block, then the system prevents any worker from clocking in without a roster entry
 - Given I save a change to the station policy, then the new policy applies to all clock events from that point forward; existing records are not affected
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- [Node.js v20+](https://nodejs.org) — check with `node -v`
-- [nvm](https://github.com/nvm-sh/nvm) (recommended)
-
-### Install and run
-
-```bash
-nvm use 20
-npm install
-npm run dev
-```
-
-App runs at **http://localhost:5173** — navigate to `/admin` to start.
-
----
-
-## Mock Login Credentials
-
-| Email                     | Password      | Role         |
-| ------------------------- | ------------- | ------------ |
-| `admin@beerenberg.com.au` | `password123` | Office Admin |
-| `frodo@farm.com`          | `password123` | Manager      |
-| `samwise@farm.com`        | `password123` | Roster Admin |
-
----
-
-## Mock API (JSON Server)
-
-```bash
-npx json-server --watch db.json --routes routes.json --port 3001
-```
-
-After starting the mock API:
-
-1. Open the Admin screen.
-2. In the API Base URL input at the bottom-right, enter `http://localhost:3001`.
-3. Click Save.
-
-Files:
-
-- `db.json` — mock data source
-- `routes.json` — URL rewrite rules
-
----
-
-## Project Structure
-
-```
-src/
-├── main.tsx                   # App entry point + routing
-├── theme.ts                   # MUI theme configuration
-├── access/
-│   └── uiRoleNavigation.ts    # Role-to-tab access control
-├── auth/
-│   ├── AuthContext.tsx        # Auth state provider
-│   ├── authStorage.ts         # Session persistence
-│   └── roleAccess.ts          # Role constants and helpers
-├── components/
-│   ├── admin/
-│   │   ├── AdminSidebar.tsx
-│   │   └── AdminTopbar.tsx
-│   └── common/
-│       ├── ApiConfigBar.tsx
-│       └── Toast.tsx
-├── hooks/
-│   └── useToast.ts
-├── mocks/
-│   └── staffAdminMockData.ts
-├── pages/
-│   ├── Admin.tsx              # Admin dashboard entry
-│   ├── Login.tsx
-│   └── Unauthorized.tsx
-├── tabs/
-│   ├── shared.tsx             # Shared UI components
-│   ├── StaffTab.tsx
-│   ├── RosterTab.tsx
-│   ├── StationsTab.tsx
-│   ├── ClockingTab.tsx
-│   ├── RegistrationsTab.tsx
-│   ├── ReportsTab.tsx
-│   ├── BreakAlertsTab.tsx
-│   ├── ExceptionsTab.tsx
-│   └── SettingsTab.tsx
-└── utils/
-    └── api.ts
-```
-
----
-
-## Build
-
-```bash
-npm run build
-```
-
-Output goes to `dist/`.
